@@ -10,4 +10,5 @@ aayaan: nah check ts out
 https://youtu.be/62bIsvRcPv0?si=hh2dCf_5ipgqCF7G <br>
 sush: ![img_hello](hello.jpg) <br>
 aayaan: check this one out
-https://www.youtube.com/watch?v=oHg5SJYRHA0
+https://www.youtube.com/watch?v=oHg5SJYRHA0 <br>
+sush: we have a poll in discussion tab
