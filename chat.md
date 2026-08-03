@@ -15,5 +15,5 @@ https://www.youtube.com/watch?v=oHg5SJYRHA0
 
 Please vote by reacting to this post with the corresponding emoji:
 
-* - 🐶 dog (dog)
-* - 🐱 cat (cat)
+* - 👍 dog 
+* - 👎 cat 
