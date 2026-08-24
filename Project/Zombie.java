@@ -9,9 +9,9 @@ public class Zombie {
     private static final int SIZE = 18;
 
     // Human speed is 3.0, so zombie is 50% slower
-    private static final double ZOMBIE_SPEED = 1.5;
+    private static final double ZOMBIE_SPEED = 2.0;
 
-    private static final double ATTACK_DISTANCE = 20.0;
+    private static final double ATTACK_DISTANCE = 15.0;
 
     private static final int DAMAGE = 20;
 

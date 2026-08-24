@@ -408,36 +408,35 @@ public class Human {
     private void moveTowardsSafeZone(
         SafeZone safeZone
     ) {
-
-        /*
-         * Aim directly toward the door
-         */
+    
+        // Human aims towards the Safe Zone door
         double targetX =
             safeZone.getDoorX() + 5;
-
+    
         double targetY =
             safeZone.getDoorCentreY();
-
+    
         double differenceX =
             targetX - x;
-
+    
         double differenceY =
             targetY - y;
-
+    
         double distance =
             Math.sqrt(
                 differenceX * differenceX
                 +
                 differenceY * differenceY
             );
-
+    
         if (distance > 0) {
-
+    
+            // Same speed as normal human movement
             dx =
                 differenceX
                 / distance
                 * HUMAN_SPEED;
-
+    
             dy =
                 differenceY
                 / distance

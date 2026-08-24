@@ -11,6 +11,9 @@ public class Test extends JPanel {
     private Random random = new Random();
 
     private SafeZone safeZone;
+    private FastForward fastForward;
+
+    private Timer timer;
 
     private static final int WORLD_WIDTH = 1200;
     private static final int WORLD_HEIGHT = 800;
@@ -18,10 +21,21 @@ public class Test extends JPanel {
     public Test() {
 
         setPreferredSize(
-            new Dimension(WORLD_WIDTH, WORLD_HEIGHT)
+            new Dimension(
+                WORLD_WIDTH,
+                WORLD_HEIGHT
+            )
         );
 
-        // Create safe zone at top-left
+        /*
+         * Create Fast Forward controls
+         */
+        fastForward = new FastForward();
+
+        /*
+         * Create Safe Zone
+         * Top-left corner
+         */
         safeZone = new SafeZone(
             0,
             0,
@@ -30,10 +44,7 @@ public class Test extends JPanel {
         );
 
         /*
-         * Create 19 humans.
-         *
-         * Every human receives its OWN random X and Y position.
-         * Humans cannot initially spawn near the safe zone.
+         * Create 19 humans at random positions
          */
         for (int i = 0; i < 19; i++) {
 
@@ -42,8 +53,15 @@ public class Test extends JPanel {
 
             do {
 
-                humanX = random.nextInt(WORLD_WIDTH - 100) + 40;
-                humanY = random.nextInt(WORLD_HEIGHT - 120) + 40;
+                humanX =
+                    random.nextInt(
+                        WORLD_WIDTH - 100
+                    ) + 40;
+
+                humanY =
+                    random.nextInt(
+                        WORLD_HEIGHT - 120
+                    ) + 40;
 
             } while (
                 humanX < 230
@@ -60,12 +78,14 @@ public class Test extends JPanel {
         }
 
         /*
-         * ORIGINAL ZOMBIE
-         *
-         * Explicitly place it at bottom-right.
+         * Create original zombie
+         * Bottom-right corner
          */
-        int zombieX = WORLD_WIDTH - 80;
-        int zombieY = WORLD_HEIGHT - 80;
+        int zombieX =
+            WORLD_WIDTH - 80;
+
+        int zombieY =
+            WORLD_HEIGHT - 80;
 
         zombies.add(
             new Zombie(
@@ -75,23 +95,68 @@ public class Test extends JPanel {
         );
 
         /*
-         * Start simulation.
+         * Create timer
+         *
+         * IMPORTANT:
+         * We DO NOT start it here.
+         *
+         * It will start only after
+         * the JFrame is visible.
          */
-        Timer timer = new Timer(
+        timer = new Timer(
             30,
             e -> {
 
+                /*
+                 * Update timer speed
+                 * depending on 1x / 2x / 5x
+                 */
+                timer.setDelay(
+                    fastForward.getDelay()
+                );
+
                 updateHumans();
+
                 updateZombies();
 
                 repaint();
             }
         );
+    }
+
+    /*
+     * Start simulation only after
+     * the JFrame has been created
+     */
+    public void startSimulation() {
 
         timer.start();
     }
 
+    /*
+     * Allows main() to add the
+     * FastForward panel to the JFrame
+     */
+    public FastForward getFastForward() {
+
+        return fastForward;
+    }
+
     private void updateHumans() {
+
+        /*
+         * Extra protection:
+         * Don't update characters until
+         * the JPanel has a real size.
+         */
+        if (
+            getWidth() <= 0
+            ||
+            getHeight() <= 0
+        ) {
+
+            return;
+        }
 
         for (Human human : humans) {
 
@@ -106,9 +171,26 @@ public class Test extends JPanel {
 
     private void updateZombies() {
 
+        /*
+         * Extra protection:
+         * Don't update characters until
+         * the JPanel has a real size.
+         */
+        if (
+            getWidth() <= 0
+            ||
+            getHeight() <= 0
+        ) {
+
+            return;
+        }
+
         ArrayList<Human> humansToConvert =
             new ArrayList<>();
 
+        /*
+         * Update every zombie
+         */
         for (Zombie zombie : zombies) {
 
             Human deadHuman =
@@ -119,22 +201,39 @@ public class Test extends JPanel {
                     safeZone
                 );
 
+            /*
+             * If a human reaches 0 health,
+             * prepare them for conversion
+             */
             if (
                 deadHuman != null
                 &&
-                !humansToConvert.contains(deadHuman)
+                !humansToConvert.contains(
+                    deadHuman
+                )
             ) {
 
-                humansToConvert.add(deadHuman);
+                humansToConvert.add(
+                    deadHuman
+                );
             }
         }
 
         /*
-         * Convert dead humans into zombies.
+         * Convert dead humans
+         * into full zombies
          */
-        for (Human human : humansToConvert) {
+        for (
+            Human human
+            :
+            humansToConvert
+        ) {
 
-            if (humans.remove(human)) {
+            if (
+                humans.remove(
+                    human
+                )
+            ) {
 
                 zombies.add(
                     new Zombie(
@@ -147,7 +246,9 @@ public class Test extends JPanel {
     }
 
     @Override
-    protected void paintComponent(Graphics g) {
+    protected void paintComponent(
+        Graphics g
+    ) {
 
         super.paintComponent(g);
 
@@ -155,7 +256,11 @@ public class Test extends JPanel {
          * Background
          */
         g.setColor(
-            new Color(220, 220, 220)
+            new Color(
+                220,
+                220,
+                220
+            )
         );
 
         g.fillRect(
@@ -166,28 +271,40 @@ public class Test extends JPanel {
         );
 
         /*
-         * Safe zone
+         * Draw Safe Zone
          */
         safeZone.draw(g);
 
         /*
-         * Humans
+         * Draw Humans
          */
-        for (Human human : humans) {
+        for (
+            Human human
+            :
+            humans
+        ) {
+
             human.draw(g);
         }
 
         /*
-         * Zombies
+         * Draw Zombies
          */
-        for (Zombie zombie : zombies) {
+        for (
+            Zombie zombie
+            :
+            zombies
+        ) {
+
             zombie.draw(g);
         }
 
         /*
-         * Population counter
+         * Population Counter
          */
-        g.setColor(Color.BLACK);
+        g.setColor(
+            Color.BLACK
+        );
 
         g.setFont(
             new Font(
@@ -198,38 +315,88 @@ public class Test extends JPanel {
         );
 
         g.drawString(
-            "Humans: " + humans.size(),
+            "Humans: "
+            + humans.size(),
             getWidth() - 240,
             30
         );
 
         g.drawString(
-            "Zombies: " + zombies.size(),
+            "Zombies: "
+            + zombies.size(),
             getWidth() - 125,
             30
         );
     }
 
-    public static void main(String[] args) {
+    public static void main(
+        String[] args
+    ) {
 
-        JFrame frame =
-            new JFrame(
-                "Zombie Survival Simulation"
-            );
+        /*
+         * Create everything on
+         * Swing's Event Dispatch Thread
+         */
+        SwingUtilities.invokeLater(
+            () -> {
 
-        Test simulation =
-            new Test();
+                JFrame frame =
+                    new JFrame(
+                        "Zombie Survival Simulation"
+                    );
 
-        frame.add(simulation);
+                Test simulation =
+                    new Test();
 
-        frame.pack();
+                /*
+                 * Main JFrame layout
+                 */
+                frame.setLayout(
+                    new BorderLayout()
+                );
 
-        frame.setDefaultCloseOperation(
-            JFrame.EXIT_ON_CLOSE
+                /*
+                 * Simulation in centre
+                 */
+                frame.add(
+                    simulation,
+                    BorderLayout.CENTER
+                );
+
+                /*
+                 * Fast Forward buttons
+                 * at the bottom
+                 */
+                frame.add(
+                    simulation.getFastForward(),
+                    BorderLayout.SOUTH
+                );
+
+                frame.setDefaultCloseOperation(
+                    JFrame.EXIT_ON_CLOSE
+                );
+
+                /*
+                 * Uses preferred size from Test
+                 */
+                frame.pack();
+
+                frame.setLocationRelativeTo(
+                    null
+                );
+
+                /*
+                 * Make window visible FIRST
+                 */
+                frame.setVisible(
+                    true
+                );
+
+                /*
+                 * THEN start simulation
+                 */
+                simulation.startSimulation();
+            }
         );
-
-        frame.setLocationRelativeTo(null);
-
-        frame.setVisible(true);
     }
 }
