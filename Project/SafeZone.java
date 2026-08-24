@@ -1,4 +1,5 @@
 import java.awt.*;
+import java.util.Random;
 
 public class SafeZone {
 
@@ -17,9 +18,8 @@ public class SafeZone {
         this.width = width;
         this.height = height;
 
-        // Door in the middle of right wall
-        this.doorHeight = 50;
-        this.doorY = y + (height / 2) - (doorHeight / 2);
+        doorHeight = 50;
+        doorY = y + height / 2 - doorHeight / 2;
     }
 
     public boolean contains(
@@ -31,14 +31,13 @@ public class SafeZone {
         double centreX = objectX + objectSize / 2.0;
         double centreY = objectY + objectSize / 2.0;
 
-        return centreX >= x
-            && centreX <= x + width
-            && centreY >= y
-            && centreY <= y + height;
+        return centreX > x
+            && centreX < x + width
+            && centreY > y
+            && centreY < y + height;
     }
 
-    public boolean isAtDoor(
-        double objectX,
+    public boolean isDoorY(
         double objectY,
         int objectSize
     ) {
@@ -46,21 +45,56 @@ public class SafeZone {
         double centreY =
             objectY + objectSize / 2.0;
 
-        return objectX <= x + width + 10
-            && objectX + objectSize >= x + width - 10
-            && centreY >= doorY
+        return centreY >= doorY
             && centreY <= doorY + doorHeight;
     }
 
-    public int getDoorX() {
-        return x + width;
+    /*
+     * Returns true if a normal human is trying
+     * to enter the building through a wall.
+     */
+    public boolean blocksHumanMovement(
+        double currentX,
+        double currentY,
+        double nextX,
+        double nextY,
+        int humanSize,
+        boolean allowedToEnter
+    ) {
+
+        boolean nextIntersectsBuilding =
+            nextX + humanSize > x
+            && nextX < x + width
+            && nextY + humanSize > y
+            && nextY < y + height;
+
+        if (!nextIntersectsBuilding) {
+            return false;
+        }
+
+        /*
+         * Injured humans can enter ONLY
+         * through the door.
+         */
+        if (
+            allowedToEnter
+            &&
+            isDoorY(nextY, humanSize)
+            &&
+            currentX >= x + width - humanSize
+        ) {
+
+            return false;
+        }
+
+        return true;
     }
 
-    public int getDoorCentreY() {
-        return doorY + doorHeight / 2;
-    }
-
-    // Zombies treat the entire building as solid
+    /*
+     * Zombies have no key.
+     * The entire building, including the door,
+     * acts like a solid object to them.
+     */
     public boolean wouldZombieEnter(
         double zombieX,
         double zombieY,
@@ -73,18 +107,48 @@ public class SafeZone {
             && zombieY < y + height;
     }
 
+    public int getDoorX() {
+        return x + width;
+    }
+
+    public int getDoorCentreY() {
+        return doorY + doorHeight / 2;
+    }
+
+    /*
+     * Give each recovering human a different
+     * position inside the safe zone.
+     */
+    public int getRandomRestX(
+        Random random,
+        int humanSize
+    ) {
+
+        return x + 25
+            + random.nextInt(
+                width - humanSize - 50
+            );
+    }
+
+    public int getRandomRestY(
+        Random random,
+        int humanSize
+    ) {
+
+        return y + 45
+            + random.nextInt(
+                height - humanSize - 65
+            );
+    }
+
     public void draw(Graphics g) {
 
         Graphics2D g2 =
             (Graphics2D) g;
 
-        // Building interior
+        // Interior
         g.setColor(
-            new Color(
-                180,
-                255,
-                180
-            )
+            new Color(180, 255, 180)
         );
 
         g.fillRect(
@@ -94,20 +158,16 @@ public class SafeZone {
             height
         );
 
-        // Building walls
+        // Walls
         g2.setColor(
-            new Color(
-                0,
-                110,
-                0
-            )
+            new Color(0, 110, 0)
         );
 
         g2.setStroke(
             new BasicStroke(4)
         );
 
-        // Top
+        // Top wall
         g2.drawLine(
             x,
             y,
@@ -115,7 +175,7 @@ public class SafeZone {
             y
         );
 
-        // Left
+        // Left wall
         g2.drawLine(
             x,
             y,
@@ -123,7 +183,7 @@ public class SafeZone {
             y + height
         );
 
-        // Bottom
+        // Bottom wall
         g2.drawLine(
             x,
             y + height,
@@ -131,7 +191,7 @@ public class SafeZone {
             y + height
         );
 
-        // Right wall ABOVE door
+        // Right wall above door
         g2.drawLine(
             x + width,
             y,
@@ -139,7 +199,7 @@ public class SafeZone {
             doorY
         );
 
-        // Right wall BELOW door
+        // Right wall below door
         g2.drawLine(
             x + width,
             doorY + doorHeight,
@@ -151,6 +211,7 @@ public class SafeZone {
             new BasicStroke(1)
         );
 
+        // Title
         g.setColor(Color.BLACK);
 
         g.setFont(
@@ -165,20 +226,6 @@ public class SafeZone {
             "SAFE ZONE",
             x + 30,
             y + 30
-        );
-
-        g.setFont(
-            new Font(
-                "Arial",
-                Font.PLAIN,
-                12
-            )
-        );
-
-        g.drawString(
-            "LOCKED",
-            x + width - 55,
-            doorY - 8
         );
     }
 }

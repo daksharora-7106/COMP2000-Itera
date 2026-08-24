@@ -10,8 +10,7 @@ public class Human {
     private double dx;
     private double dy;
 
-    private Random random =
-        new Random();
+    private final Random random = new Random();
 
     private static final int SIZE = 15;
 
@@ -19,28 +18,26 @@ public class Human {
 
     private static final double DETECTION_RANGE = 150.0;
 
-    private static final int WALL_MARGIN = 70;
-
-    private static final double WALL_AVOIDANCE = 2.5;
+    private static final int WALL_MARGIN = 60;
 
     private int health = 100;
 
+    private static final int SAFE_ZONE_THRESHOLD = 30;
+
+    private static final int LEAVE_SAFE_ZONE_HEALTH = 80;
+
     private static final long DAMAGE_COOLDOWN = 600;
+
+    private static final long HEAL_INTERVAL = 3000;
 
     private long lastDamageTime = 0;
 
-    // Human heads to safe zone when health reaches this
-    private static final int SAFE_ZONE_THRESHOLD = 30;
-
-    // Once healed to this level, human leaves again
-    private static final int LEAVE_SAFE_ZONE_HEALTH = 80;
+    private long lastHealTime = 0;
 
     private boolean insideSafeZone = false;
 
-    // Healing
-    private static final long HEAL_INTERVAL = 3000;
-
-    private long lastHealTime = 0;
+    private double safeX;
+    private double safeY;
 
     public Human(int x, int y) {
 
@@ -60,8 +57,11 @@ public class Human {
         /*
          * HUMAN IS INSIDE SAFE ZONE
          */
-
         if (insideSafeZone) {
+
+            // Keep human completely still
+            x = safeX;
+            y = safeY;
 
             dx = 0;
             dy = 0;
@@ -69,18 +69,19 @@ public class Human {
             heal();
 
             /*
-             * Once health reaches 80,
-             * human leaves the safe zone.
+             * Human leaves once health reaches 80
              */
-
-            if (
-                health
-                >= LEAVE_SAFE_ZONE_HEALTH
-            ) {
+            if (health >= LEAVE_SAFE_ZONE_HEALTH) {
 
                 insideSafeZone = false;
 
-                // Start moving through the door
+                // Put human just outside the door
+                x = safeZone.getDoorX() + SIZE + 5;
+
+                y =
+                    safeZone.getDoorCentreY()
+                    - SIZE / 2.0;
+
                 dx = HUMAN_SPEED;
                 dy = 0;
             }
@@ -89,219 +90,117 @@ public class Human {
         }
 
         /*
-         * LOW HEALTH:
-         * Go to safe zone.
+         * Human seeks safe zone only
+         * when health is 30 or lower
          */
+        boolean seekingSafeZone =
+            health <= SAFE_ZONE_THRESHOLD;
 
-        if (
-            health
-            <= SAFE_ZONE_THRESHOLD
-        ) {
+        if (seekingSafeZone) {
 
-            moveTowardSafeZone(
+            moveTowardsSafeZone(
                 safeZone
             );
 
         } else {
 
+            Zombie nearestZombie =
+                findNearestZombie(
+                    zombies
+                );
+
             /*
-             * NORMAL SURVIVAL BEHAVIOUR
+             * Run if zombie is close
              */
-
-            Zombie nearestZombie = null;
-
-            double nearestDistance =
-                Double.MAX_VALUE;
-
-            for (
-                Zombie zombie
-                :
-                zombies
-            ) {
+            if (nearestZombie != null) {
 
                 double differenceX =
-                    x - zombie.getX();
+                    x - nearestZombie.getX();
 
                 double differenceY =
-                    y - zombie.getY();
+                    y - nearestZombie.getY();
 
                 double distance =
                     Math.sqrt(
-                        differenceX
-                        * differenceX
+                        differenceX * differenceX
                         +
-                        differenceY
-                        * differenceY
+                        differenceY * differenceY
                     );
 
-                if (
-                    distance
-                    < nearestDistance
-                ) {
+                if (distance < DETECTION_RANGE) {
 
-                    nearestDistance =
-                        distance;
-
-                    nearestZombie =
-                        zombie;
-                }
-            }
-
-            /*
-             * Run from zombie
-             */
-
-            if (
-                nearestZombie != null
-                &&
-                nearestDistance
-                < DETECTION_RANGE
-            ) {
-
-                double directionX =
-                    x
-                    - nearestZombie.getX();
-
-                double directionY =
-                    y
-                    - nearestZombie.getY();
-
-                if (
-                    nearestDistance
-                    > 0
-                ) {
-
-                    directionX /=
-                        nearestDistance;
-
-                    directionY /=
-                        nearestDistance;
-                }
-
-                /*
-                 * Avoid corners
-                 */
-
-                if (
-                    x
-                    < WALL_MARGIN
-                ) {
-
-                    directionX +=
-                        WALL_AVOIDANCE;
-                }
-
-                if (
-                    x
-                    >
-                    width
-                    - SIZE
-                    - WALL_MARGIN
-                ) {
-
-                    directionX -=
-                        WALL_AVOIDANCE;
-                }
-
-                if (
-                    y
-                    < WALL_MARGIN
-                ) {
-
-                    directionY +=
-                        WALL_AVOIDANCE;
-                }
-
-                if (
-                    y
-                    >
-                    height
-                    - SIZE
-                    - WALL_MARGIN
-                ) {
-
-                    directionY -=
-                        WALL_AVOIDANCE;
-                }
-
-                double length =
-                    Math.sqrt(
-                        directionX
-                        * directionX
-                        +
-                        directionY
-                        * directionY
+                    fleeFromZombie(
+                        nearestZombie,
+                        width,
+                        height
                     );
 
-                if (
-                    length > 0
-                ) {
+                } else {
 
-                    dx =
-                        directionX
-                        / length
-                        * HUMAN_SPEED;
-
-                    dy =
-                        directionY
-                        / length
-                        * HUMAN_SPEED;
+                    roam();
                 }
 
             } else {
 
-                /*
-                 * Roam normally
-                 */
-
-                if (
-                    random.nextInt(100)
-                    < 2
-                ) {
-
-                    chooseNewDirection();
-                }
+                roam();
             }
         }
 
-        double nextX =
-            x + dx;
-
-        double nextY =
-            y + dy;
+        /*
+         * Calculate next position
+         */
+        double nextX = x + dx;
+        double nextY = y + dy;
 
         /*
-         * Check safe zone entry.
-         *
-         * Only low-health humans should
-         * intentionally enter.
+         * CHECK IF LOW-HEALTH HUMAN
+         * HAS REACHED THE SAFE-ZONE DOOR
          */
 
+        double doorX =
+            safeZone.getDoorX();
+
+        double doorY =
+            safeZone.getDoorCentreY();
+
+        double distanceToDoor =
+            Math.sqrt(
+                Math.pow(x - doorX, 2)
+                +
+                Math.pow(y - doorY, 2)
+            );
+
+        /*
+         * If the human is injured and gets
+         * close enough to the door,
+         * allow them to enter
+         */
         if (
-            health
-            <= SAFE_ZONE_THRESHOLD
+            seekingSafeZone
             &&
-            safeZone.isAtDoor(
-                nextX,
-                nextY,
-                SIZE
-            )
+            distanceToDoor <= 25
         ) {
 
-            /*
-             * Move them just inside the door.
-             */
-
-            x =
-                safeZone.getDoorX()
-                - SIZE
-                - 5;
-
-            y =
-                safeZone.getDoorCentreY()
-                - SIZE / 2.0;
-
             insideSafeZone = true;
+
+            /*
+             * Give each human their own
+             * resting location inside
+             */
+            safeX =
+                safeZone.getRandomRestX(
+                    random,
+                    SIZE
+                );
+
+            safeY =
+                safeZone.getRandomRestY(
+                    random,
+                    SIZE
+                );
+
+            x = safeX;
+            y = safeY;
 
             dx = 0;
             dy = 0;
@@ -312,11 +211,59 @@ public class Human {
             return;
         }
 
+        /*
+         * SAFE-ZONE WALL COLLISION
+         *
+         * Humans who are not properly entering
+         * through the door treat the safe zone
+         * like a solid building.
+         */
+        if (
+            safeZone.blocksHumanMovement(
+                x,
+                y,
+                nextX,
+                nextY,
+                SIZE,
+                seekingSafeZone
+            )
+        ) {
+
+            /*
+             * Pick a new direction instead
+             * of walking through the wall
+             */
+            chooseNewDirection();
+
+            nextX = x + dx;
+            nextY = y + dy;
+
+            /*
+             * If the new direction still
+             * enters the wall, stay still
+             * for this frame
+             */
+            if (
+                safeZone.blocksHumanMovement(
+                    x,
+                    y,
+                    nextX,
+                    nextY,
+                    SIZE,
+                    seekingSafeZone
+                )
+            ) {
+
+                nextX = x;
+                nextY = y;
+            }
+        }
+
         x = nextX;
         y = nextY;
 
         /*
-         * World boundaries
+         * WORLD BOUNDARIES
          */
 
         if (x < 0) {
@@ -325,10 +272,7 @@ public class Human {
             dx = Math.abs(dx);
         }
 
-        if (
-            x
-            > width - SIZE
-        ) {
+        if (x > width - SIZE) {
 
             x = width - SIZE;
             dx = -Math.abs(dx);
@@ -340,22 +284,136 @@ public class Human {
             dy = Math.abs(dy);
         }
 
-        if (
-            y
-            > height - SIZE
-        ) {
+        if (y > height - SIZE) {
 
             y = height - SIZE;
             dy = -Math.abs(dy);
         }
     }
 
-    private void moveTowardSafeZone(
+    private Zombie findNearestZombie(
+        ArrayList<Zombie> zombies
+    ) {
+
+        Zombie nearestZombie = null;
+
+        double nearestDistance =
+            Double.MAX_VALUE;
+
+        for (Zombie zombie : zombies) {
+
+            double differenceX =
+                x - zombie.getX();
+
+            double differenceY =
+                y - zombie.getY();
+
+            double distance =
+                Math.sqrt(
+                    differenceX * differenceX
+                    +
+                    differenceY * differenceY
+                );
+
+            if (distance < nearestDistance) {
+
+                nearestDistance = distance;
+
+                nearestZombie = zombie;
+            }
+        }
+
+        return nearestZombie;
+    }
+
+    private void fleeFromZombie(
+        Zombie zombie,
+        int width,
+        int height
+    ) {
+
+        double directionX =
+            x - zombie.getX();
+
+        double directionY =
+            y - zombie.getY();
+
+        double distance =
+            Math.sqrt(
+                directionX * directionX
+                +
+                directionY * directionY
+            );
+
+        if (distance > 0) {
+
+            directionX /= distance;
+            directionY /= distance;
+        }
+
+        /*
+         * Prevent humans from getting
+         * trapped in world corners
+         */
+
+        if (x < WALL_MARGIN) {
+            directionX += 1.8;
+        }
+
+        if (
+            x
+            > width
+            - SIZE
+            - WALL_MARGIN
+        ) {
+
+            directionX -= 1.8;
+        }
+
+        if (y < WALL_MARGIN) {
+            directionY += 1.8;
+        }
+
+        if (
+            y
+            > height
+            - SIZE
+            - WALL_MARGIN
+        ) {
+
+            directionY -= 1.8;
+        }
+
+        double length =
+            Math.sqrt(
+                directionX * directionX
+                +
+                directionY * directionY
+            );
+
+        if (length > 0) {
+
+            dx =
+                directionX
+                / length
+                * HUMAN_SPEED;
+
+            dy =
+                directionY
+                / length
+                * HUMAN_SPEED;
+        }
+    }
+
+    private void moveTowardsSafeZone(
         SafeZone safeZone
     ) {
 
+        /*
+         * Aim directly toward the door
+         */
         double targetX =
-            safeZone.getDoorX();
+            safeZone.getDoorX() + 5;
 
         double targetY =
             safeZone.getDoorCentreY();
@@ -368,16 +426,12 @@ public class Human {
 
         double distance =
             Math.sqrt(
-                differenceX
-                * differenceX
+                differenceX * differenceX
                 +
-                differenceY
-                * differenceY
+                differenceY * differenceY
             );
 
-        if (
-            distance > 0
-        ) {
+        if (distance > 0) {
 
             dx =
                 differenceX
@@ -391,11 +445,29 @@ public class Human {
         }
     }
 
+    private void roam() {
+
+        /*
+         * Small chance of changing
+         * direction while roaming
+         */
+        if (
+            random.nextInt(100)
+            < 2
+        ) {
+
+            chooseNewDirection();
+        }
+    }
+
     private void heal() {
 
         long currentTime =
             System.currentTimeMillis();
 
+        /*
+         * Heal 10 HP every 3 seconds
+         */
         if (
             currentTime
             - lastHealTime
@@ -404,10 +476,7 @@ public class Human {
 
             health += 10;
 
-            if (
-                health > 100
-            ) {
-
+            if (health > 100) {
                 health = 100;
             }
 
@@ -418,6 +487,10 @@ public class Human {
 
     private void chooseNewDirection() {
 
+        /*
+         * Allow movement in any
+         * 360-degree direction
+         */
         double angle =
             random.nextDouble()
             * Math.PI
@@ -436,6 +509,10 @@ public class Human {
         int damage
     ) {
 
+        /*
+         * Humans cannot be attacked
+         * while inside safe zone
+         */
         if (insideSafeZone) {
             return false;
         }
@@ -443,6 +520,10 @@ public class Human {
         long currentTime =
             System.currentTimeMillis();
 
+        /*
+         * Prevent zombie from damaging
+         * human every 30 milliseconds
+         */
         if (
             currentTime
             - lastDamageTime
@@ -454,10 +535,7 @@ public class Human {
 
         health -= damage;
 
-        if (
-            health < 0
-        ) {
-
+        if (health < 0) {
             health = 0;
         }
 
@@ -489,6 +567,9 @@ public class Human {
 
     public void draw(Graphics g) {
 
+        /*
+         * Draw human
+         */
         g.setColor(Color.BLUE);
 
         g.fillOval(
@@ -499,7 +580,7 @@ public class Human {
         );
 
         /*
-         * Health bar
+         * HEALTH BAR
          */
 
         int barWidth = 24;
@@ -511,6 +592,9 @@ public class Human {
         int barY =
             (int) y - 8;
 
+        /*
+         * Empty health
+         */
         g.setColor(Color.RED);
 
         g.fillRect(
@@ -520,7 +604,10 @@ public class Human {
             barHeight
         );
 
-        int currentHealthWidth =
+        /*
+         * Current health
+         */
+        int remainingHealthWidth =
             (int) (
                 barWidth
                 * health
@@ -532,7 +619,7 @@ public class Human {
         g.fillRect(
             barX,
             barY,
-            currentHealthWidth,
+            remainingHealthWidth,
             barHeight
         );
     }
