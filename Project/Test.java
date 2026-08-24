@@ -13,6 +13,9 @@ public class Test extends JPanel {
     private SafeZone safeZone;
     private FastForward fastForward;
 
+    // Collectible weapon
+    private Weapon weapon;
+
     private Timer timer;
 
     private static final int WORLD_WIDTH = 1200;
@@ -41,6 +44,15 @@ public class Test extends JPanel {
             0,
             180,
             180
+        );
+
+        /*
+         * Create collectible weapon
+         * near the centre of the map
+         */
+        weapon = new Weapon(
+            WORLD_WIDTH / 2,
+            WORLD_HEIGHT / 2
         );
 
         /*
@@ -96,12 +108,6 @@ public class Test extends JPanel {
 
         /*
          * Create timer
-         *
-         * IMPORTANT:
-         * We DO NOT start it here.
-         *
-         * It will start only after
-         * the JFrame is visible.
          */
         timer = new Timer(
             30,
@@ -118,6 +124,8 @@ public class Test extends JPanel {
                 updateHumans();
 
                 updateZombies();
+
+                updateWeapon();
 
                 repaint();
             }
@@ -145,9 +153,8 @@ public class Test extends JPanel {
     private void updateHumans() {
 
         /*
-         * Extra protection:
          * Don't update characters until
-         * the JPanel has a real size.
+         * the JPanel has a real size
          */
         if (
             getWidth() <= 0
@@ -172,9 +179,8 @@ public class Test extends JPanel {
     private void updateZombies() {
 
         /*
-         * Extra protection:
          * Don't update characters until
-         * the JPanel has a real size.
+         * the JPanel has a real size
          */
         if (
             getWidth() <= 0
@@ -245,6 +251,72 @@ public class Test extends JPanel {
         }
     }
 
+    /*
+     * Weapon logic
+     */
+    private void updateWeapon() {
+
+        /*
+         * Human collects the weapon
+         */
+        if (!weapon.isCollected()) {
+
+            for (Human human : humans) {
+
+                double distance =
+                    Math.hypot(
+                        human.getX() - weapon.getX(),
+                        human.getY() - weapon.getY()
+                    );
+
+                if (distance <= 22) {
+
+                    human.collectWeapon();
+
+                    weapon.collect();
+
+                    break;
+                }
+            }
+        }
+
+        /*
+         * Armed human can defeat
+         * one zombie
+         */
+        for (Human human : humans) {
+
+            if (!human.isArmed()) {
+                continue;
+            }
+
+            for (
+                int i = zombies.size() - 1;
+                i >= 0;
+                i--
+            ) {
+
+                Zombie zombie =
+                    zombies.get(i);
+
+                double distance =
+                    Math.hypot(
+                        human.getX() - zombie.getX(),
+                        human.getY() - zombie.getY()
+                    );
+
+                if (distance <= 22) {
+
+                    zombies.remove(i);
+
+                    human.useWeapon();
+
+                    return;
+                }
+            }
+        }
+    }
+
     @Override
     protected void paintComponent(
         Graphics g
@@ -274,6 +346,11 @@ public class Test extends JPanel {
          * Draw Safe Zone
          */
         safeZone.draw(g);
+
+        /*
+         * Draw Weapon
+         */
+        weapon.draw(g);
 
         /*
          * Draw Humans
@@ -386,14 +463,14 @@ public class Test extends JPanel {
                 );
 
                 /*
-                 * Make window visible FIRST
+                 * Make window visible first
                  */
                 frame.setVisible(
                     true
                 );
 
                 /*
-                 * THEN start simulation
+                 * Then start simulation
                  */
                 simulation.startSimulation();
             }
