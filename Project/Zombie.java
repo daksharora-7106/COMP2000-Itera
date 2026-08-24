@@ -3,11 +3,17 @@ import java.util.ArrayList;
 
 public class Zombie {
 
-    private int x;
-    private int y;
+    private double x;
+    private double y;
 
-    private static final int CHASE_SPEED = 2;
-    private static final int CATCH_DISTANCE = 18;
+    private static final int SIZE = 18;
+
+    // Human speed is 3.0, so zombie is 50% slower
+    private static final double ZOMBIE_SPEED = 1.5;
+
+    private static final double ATTACK_DISTANCE = 20.0;
+
+    private static final int DAMAGE = 20;
 
     public Zombie(int x, int y) {
 
@@ -15,19 +21,20 @@ public class Zombie {
         this.y = y;
     }
 
-    public void move(
+    public Human move(
         int width,
         int height,
-        ArrayList<Human> humans
+        ArrayList<Human> humans,
+        SafeZone safeZone
     ) {
 
         Human nearestHuman = null;
         double nearestDistance = Double.MAX_VALUE;
 
-        // Find nearest human who is NOT already infected
+        // Find nearest human who is outside the safe zone
         for (Human human : humans) {
 
-            if (human.isInfected()) {
+            if (human.isInSafeZone()) {
                 continue;
             }
 
@@ -47,61 +54,125 @@ public class Zombie {
             }
         }
 
-        // If there is still a healthy human
-        if (nearestHuman != null) {
+        // No humans left outside safe zone
+        if (nearestHuman == null) {
+            return null;
+        }
 
-            // If caught, infect them
-            if (nearestDistance <= CATCH_DISTANCE) {
+        // Attack if close enough
+        if (nearestDistance <= ATTACK_DISTANCE) {
 
-                nearestHuman.infect();
+            boolean damageDone =
+                nearestHuman.takeDamage(DAMAGE);
 
-            } else {
+            // Convert only when health reaches 0
+            if (
+                damageDone
+                &&
+                nearestHuman.isDead()
+            ) {
 
-                // Otherwise chase them
-                double directionX = nearestHuman.getX() - x;
-                double directionY = nearestHuman.getY() - y;
+                return nearestHuman;
+            }
 
-                int dx = (int) Math.round(
-                    directionX / nearestDistance * CHASE_SPEED
+            return null;
+        }
+
+        // Move towards nearest human
+        double directionX =
+            nearestHuman.getX() - x;
+
+        double directionY =
+            nearestHuman.getY() - y;
+
+        double moveX =
+            directionX
+            / nearestDistance
+            * ZOMBIE_SPEED;
+
+        double moveY =
+            directionY
+            / nearestDistance
+            * ZOMBIE_SPEED;
+
+        double newX = x + moveX;
+        double newY = y + moveY;
+
+        // Zombies cannot enter safe zone
+        if (
+            !safeZone.wouldZombieEnter(
+                newX,
+                newY,
+                SIZE
+            )
+        ) {
+
+            x = newX;
+            y = newY;
+
+        } else {
+
+            // Try moving along the safe-zone wall
+            boolean canMoveX =
+                !safeZone.wouldZombieEnter(
+                    newX,
+                    y,
+                    SIZE
                 );
 
-                int dy = (int) Math.round(
-                    directionY / nearestDistance * CHASE_SPEED
+            boolean canMoveY =
+                !safeZone.wouldZombieEnter(
+                    x,
+                    newY,
+                    SIZE
                 );
 
-                x += dx;
-                y += dy;
+            if (canMoveX) {
+                x = newX;
+            }
+
+            if (canMoveY) {
+                y = newY;
             }
         }
 
+        // Keep zombie inside world
         if (x < 0) {
             x = 0;
         }
 
-        if (x > width - 18) {
-            x = width - 18;
+        if (x > width - SIZE) {
+            x = width - SIZE;
         }
 
         if (y < 0) {
             y = 0;
         }
 
-        if (y > height - 18) {
-            y = height - 18;
+        if (y > height - SIZE) {
+            y = height - SIZE;
         }
+
+        return null;
     }
 
     public int getX() {
-        return x;
+        return (int) x;
     }
 
     public int getY() {
-        return y;
+        return (int) y;
     }
 
     public void draw(Graphics g) {
 
         g.setColor(Color.RED);
-        g.fillOval(x, y, 18, 18);
+
+        g.fillOval(
+            (int) x,
+            (int) y,
+            SIZE,
+            SIZE
+        );
     }
 }
