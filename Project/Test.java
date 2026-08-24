@@ -55,14 +55,30 @@ public class Test extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-
+       
+        int healthyCount = 0;
+        int infectedCount = 0;
         // Draw humans
         for (Human human : humans) {
-            human.draw(g);
-        }
+    human.draw(g);
+
+    if (human.isInfected()) {
+        infectedCount++;
+    } else {
+        healthyCount++;
+    }
+}
 
         // Draw zombie
         zombie.draw(g);
+      // Display simulation statistics
+g.setColor(Color.BLACK);
+g.drawString(
+    "Healthy Humans: " + healthyCount +
+    "    Infected Humans: " + infectedCount,
+    20,
+    20
+);  
     }
 
     public static void main(String[] args) {
