@@ -36,6 +36,9 @@ public class Human {
 
     private boolean insideSafeZone = false;
 
+    // Tracks whether this human has collected a weapon
+    private boolean armed = false;
+
     private double safeX;
     private double safeY;
 
@@ -408,35 +411,35 @@ public class Human {
     private void moveTowardsSafeZone(
         SafeZone safeZone
     ) {
-    
+
         // Human aims towards the Safe Zone door
         double targetX =
             safeZone.getDoorX() + 5;
-    
+
         double targetY =
             safeZone.getDoorCentreY();
-    
+
         double differenceX =
             targetX - x;
-    
+
         double differenceY =
             targetY - y;
-    
+
         double distance =
             Math.sqrt(
                 differenceX * differenceX
                 +
                 differenceY * differenceY
             );
-    
+
         if (distance > 0) {
-    
+
             // Same speed as normal human movement
             dx =
                 differenceX
                 / distance
                 * HUMAN_SPEED;
-    
+
             dy =
                 differenceY
                 / distance
@@ -552,6 +555,22 @@ public class Human {
         return insideSafeZone;
     }
 
+    /*
+     * WEAPON METHODS
+     */
+
+    public void collectWeapon() {
+        armed = true;
+    }
+
+    public boolean isArmed() {
+        return armed;
+    }
+
+    public void useWeapon() {
+        armed = false;
+    }
+
     public int getHealth() {
         return health;
     }
@@ -577,7 +596,29 @@ public class Human {
             SIZE,
             SIZE
         );
+        /*
+ * Show weapon marker above
+ * an armed human
+ */
+if (armed) {
 
+    g.setColor(Color.ORANGE);
+
+    g.fillRect(
+        (int) x + SIZE,
+        (int) y,
+        12,
+        4
+    );
+
+    g.setColor(Color.BLACK);
+
+    g.drawString(
+        "ARMED",
+        (int) x - 10,
+        (int) y - 12
+    );
+}
         /*
          * HEALTH BAR
          */
