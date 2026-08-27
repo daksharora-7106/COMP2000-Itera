@@ -143,9 +143,6 @@ class Human extends Character {
         SafePoint safePoint
     ) {
 
-        /*
-         * HUMAN INSIDE SAFE POINT
-         */
         if (insideSafePoint) {
 
             dx = 0;
@@ -153,9 +150,6 @@ class Human extends Character {
 
             healInsideSafePoint();
 
-            /*
-             * Leave again after reaching 80 HP.
-             */
             if (health >= 80) {
 
                 insideSafePoint = false;
@@ -174,11 +168,6 @@ class Human extends Character {
             return;
         }
 
-        /*
-         * At 20 HP, go toward Safe Point.
-         *
-         * Speed DOES NOT increase.
-         */
         if (health <= 20) {
 
             moveTowardsSafePoint(
@@ -257,10 +246,6 @@ class Human extends Character {
         double nextY =
             position.getY() + dy;
 
-        /*
-         * Humans cannot casually walk through
-         * Safe Point walls.
-         */
         if (
             safePoint.blocksHumanMovement(
                 position.getX(),
@@ -338,9 +323,6 @@ class Human extends Character {
             directionY /= distance;
         }
 
-        /*
-         * Prevent corner trapping.
-         */
         int margin = 60;
 
         if (position.getX() < margin) {
@@ -374,10 +356,6 @@ class Human extends Character {
 
         if (length > 0) {
 
-            /*
-             * Same human speed.
-             * No speed boost.
-             */
             dx =
                 directionX
                 / length
@@ -411,9 +389,6 @@ class Human extends Character {
 
         if (distance > 0) {
 
-            /*
-             * Still uses normal speed.
-             */
             dx =
                 directionX
                 / distance
@@ -603,6 +578,32 @@ class Human extends Character {
             height
         );
     }
+
+    /*
+     * Draw a short character type label
+     * underneath the character.
+     */
+    protected void drawTypeLabel(
+        Graphics g,
+        String label
+    ) {
+
+        g.setColor(Color.BLACK);
+
+        g.setFont(
+            new Font(
+                "Arial",
+                Font.BOLD,
+                10
+            )
+        );
+
+        g.drawString(
+            label,
+            getX() - 5,
+            getY() + size + 12
+        );
+    }
 }
 
 
@@ -623,6 +624,17 @@ class Civilian extends Human {
 
     public void flee() {
         fearLevel++;
+    }
+
+    @Override
+    public void draw(Graphics g) {
+
+        super.draw(g);
+
+        drawTypeLabel(
+            g,
+            "C"
+        );
     }
 }
 
@@ -652,6 +664,17 @@ class Soldier extends Human {
 
             ammo--;
         }
+    }
+
+    @Override
+    public void draw(Graphics g) {
+
+        super.draw(g);
+
+        drawTypeLabel(
+            g,
+            "S"
+        );
     }
 }
 
@@ -690,6 +713,17 @@ class Medic extends Human {
             medKits--;
         }
     }
+
+    @Override
+    public void draw(Graphics g) {
+
+        super.draw(g);
+
+        drawTypeLabel(
+            g,
+            "M"
+        );
+    }
 }
 
 
@@ -709,9 +743,6 @@ class Zombie extends Character {
         int y
     ) {
 
-        /*
-         * Zombie = 50% slower than Human.
-         */
         super(
             100,
             1.5,
@@ -737,9 +768,6 @@ class Zombie extends Character {
             return null;
         }
 
-        /*
-         * Ignore humans inside Safe Point.
-         */
         if (target.isInSafePoint()) {
             return null;
         }
@@ -749,9 +777,6 @@ class Zombie extends Character {
                 target.getPosition()
             );
 
-        /*
-         * Attack.
-         */
         if (
             distance
             <= ATTACK_DISTANCE
@@ -774,9 +799,6 @@ class Zombie extends Character {
             return null;
         }
 
-        /*
-         * Chase.
-         */
         chase(target);
 
         double nextX =
@@ -785,9 +807,6 @@ class Zombie extends Character {
         double nextY =
             position.getY();
 
-        /*
-         * Zombies cannot enter Safe Point.
-         */
         if (
             safePoint.wouldZombieEnter(
                 nextX,
@@ -932,6 +951,33 @@ class Zombie extends Character {
             size,
             size
         );
+
+        drawTypeLabel(
+            g,
+            "Z"
+        );
+    }
+
+    protected void drawTypeLabel(
+        Graphics g,
+        String label
+    ) {
+
+        g.setColor(Color.BLACK);
+
+        g.setFont(
+            new Font(
+                "Arial",
+                Font.BOLD,
+                10
+            )
+        );
+
+        g.drawString(
+            label,
+            getX() - 5,
+            getY() + size + 12
+        );
     }
 }
 
@@ -956,6 +1002,24 @@ class Runner extends Zombie {
         speed =
             sprintSpeed;
     }
+
+    @Override
+    public void draw(Graphics g) {
+
+        g.setColor(Color.RED);
+
+        g.fillOval(
+            getX(),
+            getY(),
+            size,
+            size
+        );
+
+        drawTypeLabel(
+            g,
+            "R"
+        );
+    }
 }
 
 
@@ -979,6 +1043,24 @@ class Stalker extends Zombie {
     ) {
 
         target.takeDamage(30);
+    }
+
+    @Override
+    public void draw(Graphics g) {
+
+        g.setColor(Color.RED);
+
+        g.fillOval(
+            getX(),
+            getY(),
+            size,
+            size
+        );
+
+        drawTypeLabel(
+            g,
+            "S"
+        );
     }
 }
 
@@ -1005,5 +1087,23 @@ class Bloater extends Zombie {
 
     public double getBlastRadius() {
         return blastRadius;
+    }
+
+    @Override
+    public void draw(Graphics g) {
+
+        g.setColor(Color.RED);
+
+        g.fillOval(
+            getX(),
+            getY(),
+            size,
+            size
+        );
+
+        drawTypeLabel(
+            g,
+            "B"
+        );
     }
 }
