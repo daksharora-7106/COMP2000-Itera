@@ -59,7 +59,15 @@ public class Zombie {
         }
 
         // Attack if close enough
-        if (nearestDistance <= ATTACK_DISTANCE) {
+if (nearestDistance <= ATTACK_DISTANCE) {
+
+    // Armed human blocks one zombie attack
+    if (nearestHuman.isArmed()) {
+
+        nearestHuman.useWeapon();
+
+        return null;
+    }
 
             boolean damageDone =
                 nearestHuman.takeDamage(getDamage());

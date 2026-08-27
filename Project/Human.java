@@ -112,35 +112,50 @@ public class Human {
                     zombies
                 );
 
-            /*
-             * Run if zombie is close
-             */
             if (nearestZombie != null) {
 
-                double differenceX =
-                    x - nearestZombie.getX();
+                /*
+                 * Armed humans become hunters.
+                 * Instead of running away,
+                 * they move towards the zombie.
+                 */
+                if (armed) {
 
-                double differenceY =
-                    y - nearestZombie.getY();
-
-                double distance =
-                    Math.sqrt(
-                        differenceX * differenceX
-                        +
-                        differenceY * differenceY
-                    );
-
-                if (distance < DETECTION_RANGE) {
-
-                    fleeFromZombie(
-                        nearestZombie,
-                        width,
-                        height
+                    moveTowardsZombie(
+                        nearestZombie
                     );
 
                 } else {
 
-                    roam();
+                    double differenceX =
+                        x - nearestZombie.getX();
+
+                    double differenceY =
+                        y - nearestZombie.getY();
+
+                    double distance =
+                        Math.sqrt(
+                            differenceX * differenceX
+                            +
+                            differenceY * differenceY
+                        );
+
+                    /*
+                     * Unarmed humans run away
+                     * when a zombie is nearby.
+                     */
+                    if (distance < DETECTION_RANGE) {
+
+                        fleeFromZombie(
+                            nearestZombie,
+                            width,
+                            height
+                        );
+
+                    } else {
+
+                        roam();
+                    }
                 }
 
             } else {
@@ -216,10 +231,6 @@ public class Human {
 
         /*
          * SAFE-ZONE WALL COLLISION
-         *
-         * Humans who are not properly entering
-         * through the door treat the safe zone
-         * like a solid building.
          */
         if (
             safeZone.blocksHumanMovement(
@@ -232,20 +243,11 @@ public class Human {
             )
         ) {
 
-            /*
-             * Pick a new direction instead
-             * of walking through the wall
-             */
             chooseNewDirection();
 
             nextX = x + dx;
             nextY = y + dy;
 
-            /*
-             * If the new direction still
-             * enters the wall, stay still
-             * for this frame
-             */
             if (
                 safeZone.blocksHumanMovement(
                     x,
@@ -327,6 +329,41 @@ public class Human {
         }
 
         return nearestZombie;
+    }
+
+    /*
+     * Armed humans move towards
+     * the nearest zombie.
+     */
+    private void moveTowardsZombie(
+        Zombie zombie
+    ) {
+
+        double directionX =
+            zombie.getX() - x;
+
+        double directionY =
+            zombie.getY() - y;
+
+        double distance =
+            Math.sqrt(
+                directionX * directionX
+                +
+                directionY * directionY
+            );
+
+        if (distance > 0) {
+
+            dx =
+                directionX
+                / distance
+                * HUMAN_SPEED;
+
+            dy =
+                directionY
+                / distance
+                * HUMAN_SPEED;
+        }
     }
 
     private void fleeFromZombie(
@@ -412,7 +449,6 @@ public class Human {
         SafeZone safeZone
     ) {
 
-        // Human aims towards the Safe Zone door
         double targetX =
             safeZone.getDoorX() + 5;
 
@@ -434,7 +470,6 @@ public class Human {
 
         if (distance > 0) {
 
-            // Same speed as normal human movement
             dx =
                 differenceX
                 / distance
@@ -449,10 +484,6 @@ public class Human {
 
     private void roam() {
 
-        /*
-         * Small chance of changing
-         * direction while roaming
-         */
         if (
             random.nextInt(100)
             < 2
@@ -467,9 +498,6 @@ public class Human {
         long currentTime =
             System.currentTimeMillis();
 
-        /*
-         * Heal 10 HP every 3 seconds
-         */
         if (
             currentTime
             - lastHealTime
@@ -489,10 +517,6 @@ public class Human {
 
     private void chooseNewDirection() {
 
-        /*
-         * Allow movement in any
-         * 360-degree direction
-         */
         double angle =
             random.nextDouble()
             * Math.PI
@@ -511,10 +535,6 @@ public class Human {
         int damage
     ) {
 
-        /*
-         * Humans cannot be attacked
-         * while inside safe zone
-         */
         if (insideSafeZone) {
             return false;
         }
@@ -522,10 +542,6 @@ public class Human {
         long currentTime =
             System.currentTimeMillis();
 
-        /*
-         * Prevent zombie from damaging
-         * human every 30 milliseconds
-         */
         if (
             currentTime
             - lastDamageTime
@@ -596,29 +612,31 @@ public class Human {
             SIZE,
             SIZE
         );
+
         /*
- * Show weapon marker above
- * an armed human
- */
-if (armed) {
+         * Show weapon marker above
+         * an armed human
+         */
+        if (armed) {
 
-    g.setColor(Color.ORANGE);
+            g.setColor(Color.ORANGE);
 
-    g.fillRect(
-        (int) x + SIZE,
-        (int) y,
-        12,
-        4
-    );
+            g.fillRect(
+                (int) x + SIZE,
+                (int) y,
+                12,
+                4
+            );
 
-    g.setColor(Color.BLACK);
+            g.setColor(Color.BLACK);
 
-    g.drawString(
-        "ARMED",
-        (int) x - 10,
-        (int) y - 12
-    );
-}
+            g.drawString(
+                "ARMED",
+                (int) x - 10,
+                (int) y - 12
+            );
+        }
+
         /*
          * HEALTH BAR
          */
@@ -632,9 +650,6 @@ if (armed) {
         int barY =
             (int) y - 8;
 
-        /*
-         * Empty health
-         */
         g.setColor(Color.RED);
 
         g.fillRect(
@@ -644,9 +659,6 @@ if (armed) {
             barHeight
         );
 
-        /*
-         * Current health
-         */
         int remainingHealthWidth =
             (int) (
                 barWidth
