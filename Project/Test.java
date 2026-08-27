@@ -16,6 +16,12 @@ public class Test extends JPanel {
     // Collectible weapon
     private Weapon weapon;
 
+    // Time when the weapon was last used
+    private long weaponUsedTime = 0;
+
+    // Weapon respawns after 5 seconds
+    private static final long WEAPON_RESPAWN_DELAY = 5000;
+
     private Timer timer;
 
     private static final int WORLD_WIDTH = 1200;
@@ -257,6 +263,30 @@ public class Test extends JPanel {
     private void updateWeapon() {
 
         /*
+         * Check whether a used weapon
+         * should respawn
+         */
+        if (
+            weapon.isCollected()
+            &&
+            weaponUsedTime > 0
+        ) {
+
+            long currentTime =
+                System.currentTimeMillis();
+
+            if (
+                currentTime - weaponUsedTime
+                >= WEAPON_RESPAWN_DELAY
+            ) {
+
+                weapon.respawn();
+
+                weaponUsedTime = 0;
+            }
+        }
+
+        /*
          * Human collects the weapon
          */
         if (!weapon.isCollected()) {
@@ -264,8 +294,8 @@ public class Test extends JPanel {
             for (Human human : humans) {
 
                 /*
-                 * Calculate the centre
-                 * position of the human
+                 * Calculate centre
+                 * position of human
                  */
                 double humanCentreX =
                     human.getX() + 7.5;
@@ -274,8 +304,8 @@ public class Test extends JPanel {
                     human.getY() + 7.5;
 
                 /*
-                 * Calculate the centre
-                 * position of the weapon
+                 * Calculate centre
+                 * position of weapon
                  */
                 double weaponCentreX =
                     weapon.getX() + 15.0;
@@ -285,7 +315,7 @@ public class Test extends JPanel {
 
                 /*
                  * Calculate distance between
-                 * human and weapon centres
+                 * human and weapon
                  */
                 double distance =
                     Math.hypot(
@@ -294,7 +324,7 @@ public class Test extends JPanel {
                     );
 
                 /*
-                 * Collect weapon when the
+                 * Collect weapon when
                  * human reaches it
                  */
                 if (distance <= 25) {
@@ -346,6 +376,13 @@ public class Test extends JPanel {
                      * be used once
                      */
                     human.useWeapon();
+
+                    /*
+                     * Remember when the weapon
+                     * was used so it can respawn
+                     */
+                    weaponUsedTime =
+                        System.currentTimeMillis();
 
                     return;
                 }
@@ -515,8 +552,8 @@ public class Test extends JPanel {
                 } catch (RuntimeException exception) {
 
                     /*
-                     * Display a readable error
-                     * if simulation startup fails
+                     * Display readable error
+                     * if startup fails
                      */
                     JOptionPane.showMessageDialog(
                         null,
@@ -527,7 +564,7 @@ public class Test extends JPanel {
                     );
 
                     /*
-                     * Also print technical details
+                     * Technical information
                      * for debugging
                      */
                     exception.printStackTrace();

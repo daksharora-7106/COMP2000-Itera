@@ -36,7 +36,14 @@ public class Weapon {
 
         collected = true;
     }
+    /*
+ * Make the weapon available
+ * to be collected again
+ */
+public void respawn() {
 
+    collected = false;
+}
     public int getX() {
 
         return x;
