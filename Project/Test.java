@@ -263,13 +263,41 @@ public class Test extends JPanel {
 
             for (Human human : humans) {
 
+                /*
+                 * Calculate the centre
+                 * position of the human
+                 */
+                double humanCentreX =
+                    human.getX() + 7.5;
+
+                double humanCentreY =
+                    human.getY() + 7.5;
+
+                /*
+                 * Calculate the centre
+                 * position of the weapon
+                 */
+                double weaponCentreX =
+                    weapon.getX() + 15.0;
+
+                double weaponCentreY =
+                    weapon.getY() + 5.0;
+
+                /*
+                 * Calculate distance between
+                 * human and weapon centres
+                 */
                 double distance =
                     Math.hypot(
-                        human.getX() - weapon.getX(),
-                        human.getY() - weapon.getY()
+                        humanCentreX - weaponCentreX,
+                        humanCentreY - weaponCentreY
                     );
 
-                if (distance <= 22) {
+                /*
+                 * Collect weapon when the
+                 * human reaches it
+                 */
+                if (distance <= 25) {
 
                     human.collectWeapon();
 
@@ -305,10 +333,18 @@ public class Test extends JPanel {
                         human.getY() - zombie.getY()
                     );
 
+                /*
+                 * Armed human defeats zombie
+                 * when close enough
+                 */
                 if (distance <= 22) {
 
                     zombies.remove(i);
 
+                    /*
+                     * Weapon can only
+                     * be used once
+                     */
                     human.useWeapon();
 
                     return;
@@ -417,62 +453,85 @@ public class Test extends JPanel {
         SwingUtilities.invokeLater(
             () -> {
 
-                JFrame frame =
-                    new JFrame(
-                        "Zombie Survival Simulation"
+                try {
+
+                    JFrame frame =
+                        new JFrame(
+                            "Zombie Survival Simulation"
+                        );
+
+                    Test simulation =
+                        new Test();
+
+                    /*
+                     * Main JFrame layout
+                     */
+                    frame.setLayout(
+                        new BorderLayout()
                     );
 
-                Test simulation =
-                    new Test();
+                    /*
+                     * Simulation in centre
+                     */
+                    frame.add(
+                        simulation,
+                        BorderLayout.CENTER
+                    );
 
-                /*
-                 * Main JFrame layout
-                 */
-                frame.setLayout(
-                    new BorderLayout()
-                );
+                    /*
+                     * Fast Forward buttons
+                     * at the bottom
+                     */
+                    frame.add(
+                        simulation.getFastForward(),
+                        BorderLayout.SOUTH
+                    );
 
-                /*
-                 * Simulation in centre
-                 */
-                frame.add(
-                    simulation,
-                    BorderLayout.CENTER
-                );
+                    frame.setDefaultCloseOperation(
+                        JFrame.EXIT_ON_CLOSE
+                    );
 
-                /*
-                 * Fast Forward buttons
-                 * at the bottom
-                 */
-                frame.add(
-                    simulation.getFastForward(),
-                    BorderLayout.SOUTH
-                );
+                    /*
+                     * Uses preferred size from Test
+                     */
+                    frame.pack();
 
-                frame.setDefaultCloseOperation(
-                    JFrame.EXIT_ON_CLOSE
-                );
+                    frame.setLocationRelativeTo(
+                        null
+                    );
 
-                /*
-                 * Uses preferred size from Test
-                 */
-                frame.pack();
+                    /*
+                     * Make window visible first
+                     */
+                    frame.setVisible(
+                        true
+                    );
 
-                frame.setLocationRelativeTo(
-                    null
-                );
+                    /*
+                     * Then start simulation
+                     */
+                    simulation.startSimulation();
 
-                /*
-                 * Make window visible first
-                 */
-                frame.setVisible(
-                    true
-                );
+                } catch (RuntimeException exception) {
 
-                /*
-                 * Then start simulation
-                 */
-                simulation.startSimulation();
+                    /*
+                     * Display a readable error
+                     * if simulation startup fails
+                     */
+                    JOptionPane.showMessageDialog(
+                        null,
+                        "The simulation could not start:\n"
+                        + exception.getMessage(),
+                        "Simulation Error",
+                        JOptionPane.ERROR_MESSAGE
+                    );
+
+                    /*
+                     * Also print technical details
+                     * for debugging
+                     */
+                    exception.printStackTrace();
+                }
             }
         );
     }
