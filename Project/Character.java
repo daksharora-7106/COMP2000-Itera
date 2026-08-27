@@ -995,6 +995,8 @@ class Runner extends Zombie {
     ) {
 
         super(x, y);
+
+        sprint();
     }
 
     public void sprint() {
@@ -1004,9 +1006,13 @@ class Runner extends Zombie {
     }
 
     @Override
-    public void draw(Graphics g) {
+    public void draw(
+        Graphics g
+    ) {
 
-        g.setColor(Color.RED);
+        g.setColor(
+            Color.ORANGE
+        );
 
         g.fillOval(
             getX(),
@@ -1036,6 +1042,8 @@ class Stalker extends Zombie {
     ) {
 
         super(x, y);
+
+        speed = 1.2;
     }
 
     public void ambush(
@@ -1046,9 +1054,13 @@ class Stalker extends Zombie {
     }
 
     @Override
-    public void draw(Graphics g) {
+    public void draw(
+        Graphics g
+    ) {
 
-        g.setColor(Color.RED);
+        g.setColor(
+            Color.MAGENTA
+        );
 
         g.fillOval(
             getX(),
@@ -1078,6 +1090,10 @@ class Bloater extends Zombie {
     ) {
 
         super(x, y);
+
+        health = 150;
+        speed = 0.8;
+        size = 22;
     }
 
     public void explode() {
@@ -1090,9 +1106,13 @@ class Bloater extends Zombie {
     }
 
     @Override
-    public void draw(Graphics g) {
+    public void draw(
+        Graphics g
+    ) {
 
-        g.setColor(Color.RED);
+        g.setColor(
+            Color.DARK_GRAY
+        );
 
         g.fillOval(
             getX(),
