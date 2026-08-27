@@ -5,27 +5,25 @@ import javax.swing.*;
 
 public class Test extends JPanel {
 
-    private ArrayList<Human> humans = new ArrayList<>();
-    private ArrayList<Zombie> zombies = new ArrayList<>();
-
-    private Random random = new Random();
-
-    private SafeZone safeZone;
-    private FastForward fastForward;
-
-    // Collectible weapon
-    private Weapon weapon;
-
-    // Time when the weapon was last used
-    private long weaponUsedTime = 0;
-
-    // Weapon respawns after 5 seconds
-    private static final long WEAPON_RESPAWN_DELAY = 5000;
-
-    private Timer timer;
-
     private static final int WORLD_WIDTH = 1200;
     private static final int WORLD_HEIGHT = 800;
+
+    private static final int BUILDING_SIZE = 180;
+    private static final int BOTTOM_BUILDING_OFFSET = 70;
+
+    private final Random random = new Random();
+
+    private final World world;
+    private final SafePoint safePoint;
+    private final FastForward fastForward;
+
+    private final ArrayList<Building> buildings =
+        new ArrayList<>();
+
+    private final ArrayList<Resource> resources =
+        new ArrayList<>();
+
+    private Timer timer;
 
     public Test() {
 
@@ -37,110 +35,541 @@ public class Test extends JPanel {
         );
 
         /*
-         * Create Fast Forward controls
+         * CREATE WORLD
          */
-        fastForward = new FastForward();
+        world = new World();
 
         /*
-         * Create Safe Zone
-         * Top-left corner
+         * =====================================
+         * SAFE POINT - TOP LEFT
+         * =====================================
          */
-        safeZone = new SafeZone(
-            0,
-            0,
-            180,
-            180
-        );
-
-        /*
-         * Create collectible weapon
-         * near the centre of the map
-         */
-        weapon = new Weapon(
-            WORLD_WIDTH / 2,
-            WORLD_HEIGHT / 2
-        );
-
-        /*
-         * Create 19 humans at random positions
-         */
-        for (int i = 0; i < 19; i++) {
-
-            int humanX;
-            int humanY;
-
-            do {
-
-                humanX =
-                    random.nextInt(
-                        WORLD_WIDTH - 100
-                    ) + 40;
-
-                humanY =
-                    random.nextInt(
-                        WORLD_HEIGHT - 120
-                    ) + 40;
-
-            } while (
-                humanX < 230
-                &&
-                humanY < 230
+        safePoint =
+            new SafePoint(
+                0,
+                0,
+                BUILDING_SIZE,
+                BUILDING_SIZE,
+                10
             );
 
-            humans.add(
-                new Human(
-                    humanX,
-                    humanY
+        world.addSafePoint(
+            safePoint
+        );
+
+        /*
+         * =====================================
+         * BUILDINGS
+         * =====================================
+         */
+
+        /*
+         * HOSPITAL - TOP RIGHT
+         */
+        Hospital hospital =
+            new Hospital(
+                WORLD_WIDTH - BUILDING_SIZE,
+                0
+            );
+
+        /*
+         * POLICE STATION - BOTTOM LEFT
+         *
+         * Moved upward so Fast Forward
+         * controls do not cover it.
+         */
+        PoliceStation policeStation =
+            new PoliceStation(
+                0,
+                WORLD_HEIGHT
+                    - BUILDING_SIZE
+                    - BOTTOM_BUILDING_OFFSET
+            );
+
+        /*
+         * CONVENIENCE STORE - BOTTOM RIGHT
+         *
+         * Also moved upward.
+         */
+        ConvenienceStore convenienceStore =
+            new ConvenienceStore(
+                WORLD_WIDTH - BUILDING_SIZE,
+                WORLD_HEIGHT
+                    - BUILDING_SIZE
+                    - BOTTOM_BUILDING_OFFSET
+            );
+
+        buildings.add(hospital);
+        buildings.add(policeStation);
+        buildings.add(convenienceStore);
+
+        /*
+         * Register buildings with World
+         */
+        world.addBuilding(hospital);
+        world.addBuilding(policeStation);
+        world.addBuilding(convenienceStore);
+
+        /*
+         * =====================================
+         * RESOURCES
+         * =====================================
+         */
+
+        /*
+         * Medicine near Hospital
+         */
+        Medicine medicine1 =
+            new Medicine(
+                1,
+                20,
+                WORLD_WIDTH - 240,
+                220
+            );
+
+        Medicine medicine2 =
+            new Medicine(
+                1,
+                20,
+                WORLD_WIDTH - 200,
+                220
+            );
+
+        /*
+         * Weapons near Police Station
+         */
+        Weapon weapon1 =
+            new Weapon(
+                5,
+                25,
+                20,
+                200,
+                WORLD_HEIGHT - 310
+            );
+
+        Weapon weapon2 =
+            new Weapon(
+                5,
+                25,
+                20,
+                240,
+                WORLD_HEIGHT - 310
+            );
+
+        /*
+         * Food near Convenience Store
+         */
+        Food food1 =
+            new Food(
+                1,
+                20,
+                WORLD_WIDTH - 240,
+                WORLD_HEIGHT - 310
+            );
+
+        Food food2 =
+            new Food(
+                1,
+                20,
+                WORLD_WIDTH - 200,
+                WORLD_HEIGHT - 310
+            );
+
+        resources.add(medicine1);
+        resources.add(medicine2);
+
+        resources.add(weapon1);
+        resources.add(weapon2);
+
+        resources.add(food1);
+        resources.add(food2);
+
+        /*
+         * Register resources with World
+         */
+        for (Resource resource : resources) {
+
+            world.addResource(
+                resource
+            );
+        }
+
+        /*
+         * =====================================
+         * HUMANS
+         * =====================================
+         *
+         * 19 humans total:
+         *
+         * 14 Civilians
+         * 3 Soldiers
+         * 2 Medics
+         */
+
+        /*
+         * CIVILIANS
+         */
+        for (int i = 0; i < 14; i++) {
+
+            Vector2D spawn =
+                randomHumanPosition();
+
+            world.addCharacter(
+                new Civilian(
+                    (int) spawn.getX(),
+                    (int) spawn.getY()
                 )
             );
         }
 
         /*
-         * Create original zombie
-         * Bottom-right corner
+         * SOLDIERS
          */
-        int zombieX =
-            WORLD_WIDTH - 80;
+        for (int i = 0; i < 3; i++) {
 
-        int zombieY =
-            WORLD_HEIGHT - 80;
+            Vector2D spawn =
+                randomHumanPosition();
 
-        zombies.add(
+            world.addCharacter(
+                new Soldier(
+                    (int) spawn.getX(),
+                    (int) spawn.getY()
+                )
+            );
+        }
+
+        /*
+         * MEDICS
+         */
+        for (int i = 0; i < 2; i++) {
+
+            Vector2D spawn =
+                randomHumanPosition();
+
+            world.addCharacter(
+                new Medic(
+                    (int) spawn.getX(),
+                    (int) spawn.getY()
+                )
+            );
+        }
+
+        /*
+         * =====================================
+         * ZOMBIES
+         * =====================================
+         */
+
+        /*
+         * NORMAL ZOMBIE
+         */
+        world.addCharacter(
             new Zombie(
-                zombieX,
-                zombieY
+                WORLD_WIDTH / 2,
+                WORLD_HEIGHT / 2
             )
         );
 
         /*
-         * Create timer
+         * RUNNER
          */
-        timer = new Timer(
-            30,
-            e -> {
+        world.addCharacter(
+            new Runner(
+                WORLD_WIDTH / 2 + 70,
+                WORLD_HEIGHT / 2
+            )
+        );
 
-                /*
-                 * Update timer speed
-                 * depending on 1x / 2x / 5x
-                 */
-                timer.setDelay(
-                    fastForward.getDelay()
+        /*
+         * STALKER
+         */
+        world.addCharacter(
+            new Stalker(
+                WORLD_WIDTH / 2,
+                WORLD_HEIGHT / 2 + 70
+            )
+        );
+
+        /*
+         * BLOATER
+         */
+        world.addCharacter(
+            new Bloater(
+                WORLD_WIDTH / 2 + 70,
+                WORLD_HEIGHT / 2 + 70
+            )
+        );
+
+        /*
+         * =====================================
+         * FAST FORWARD
+         * =====================================
+         */
+        fastForward =
+            new FastForward();
+
+        /*
+         * =====================================
+         * TIMER
+         * =====================================
+         */
+        timer =
+            new Timer(
+                30,
+                e -> {
+
+                    timer.setDelay(
+                        fastForward.getDelay()
+                    );
+
+                    updateSimulation();
+
+                    repaint();
+                }
+            );
+    }
+
+    /*
+     * =========================================
+     * RANDOM HUMAN SPAWN
+     * =========================================
+     *
+     * Humans cannot initially spawn
+     * inside any building or Safe Point.
+     */
+    private Vector2D randomHumanPosition() {
+
+        int x;
+        int y;
+
+        boolean invalid;
+
+        do {
+
+            x =
+                random.nextInt(
+                    WORLD_WIDTH - 100
+                ) + 40;
+
+            y =
+                random.nextInt(
+                    WORLD_HEIGHT - 120
+                ) + 40;
+
+            /*
+             * Check Safe Point
+             */
+            invalid =
+                safePoint.contains(
+                    x,
+                    y,
+                    15
                 );
 
-                updateHumans();
+            /*
+             * Check other buildings
+             */
+            for (Building building : buildings) {
 
-                updateZombies();
+                if (
+                    building.contains(
+                        x,
+                        y
+                    )
+                ) {
 
-                updateWeapon();
-
-                repaint();
+                    invalid = true;
+                    break;
+                }
             }
+
+        } while (invalid);
+
+        return new Vector2D(
+            x,
+            y
         );
     }
 
     /*
-     * Start simulation only after
-     * the JFrame has been created
+     * =========================================
+     * UPDATE SIMULATION
+     * =========================================
+     */
+    private void updateSimulation() {
+
+        /*
+         * Do not update until JPanel
+         * has a valid size.
+         */
+        if (
+            getWidth() <= 0
+            ||
+            getHeight() <= 0
+        ) {
+
+            return;
+        }
+
+        var humans =
+            world.getHumans();
+
+        var zombies =
+            world.getZombies();
+
+        /*
+         * =====================================
+         * UPDATE HUMANS
+         * =====================================
+         */
+        for (Human human : humans) {
+
+            human.update(
+                getWidth(),
+                getHeight(),
+                zombies,
+                safePoint
+            );
+
+            /*
+             * RESOURCE COLLECTION
+             */
+            for (Resource resource : resources) {
+
+                if (
+                    !resource.isCollected()
+                    &&
+                    resource.isNear(
+                        human
+                    )
+                ) {
+
+                    human.inventory.add(
+                        resource
+                    );
+
+                    resource.collect();
+                }
+            }
+
+            /*
+             * BUILDING INTERACTION
+             */
+            for (Building building : buildings) {
+
+                if (
+                    building.contains(
+                        human.getX(),
+                        human.getY()
+                    )
+                ) {
+
+                    building.interact(
+                        human
+                    );
+                }
+            }
+        }
+
+        /*
+         * =====================================
+         * UPDATE ZOMBIES
+         * =====================================
+         */
+        ArrayList<Human> convertedHumans =
+            new ArrayList<>();
+
+        for (Zombie zombie : zombies) {
+
+            Human deadHuman =
+                zombie.update(
+                    getWidth(),
+                    getHeight(),
+                    humans,
+                    safePoint
+                );
+
+            /*
+             * Prevent the same human from
+             * being converted multiple times.
+             */
+            if (
+                deadHuman != null
+                &&
+                !convertedHumans.contains(
+                    deadHuman
+                )
+            ) {
+
+                convertedHumans.add(
+                    deadHuman
+                );
+            }
+        }
+
+        /*
+         * =====================================
+         * CONVERT DEAD HUMANS
+         * =====================================
+         *
+         * Dead humans become a random
+         * zombie type.
+         */
+        for (Human human : convertedHumans) {
+
+            int zombieType =
+                random.nextInt(4);
+
+            Zombie newZombie;
+
+            if (zombieType == 0) {
+
+                newZombie =
+                    new Zombie(
+                        human.getX(),
+                        human.getY()
+                    );
+
+            } else if (zombieType == 1) {
+
+                newZombie =
+                    new Runner(
+                        human.getX(),
+                        human.getY()
+                    );
+
+            } else if (zombieType == 2) {
+
+                newZombie =
+                    new Stalker(
+                        human.getX(),
+                        human.getY()
+                    );
+
+            } else {
+
+                newZombie =
+                    new Bloater(
+                        human.getX(),
+                        human.getY()
+                    );
+            }
+
+            world.addCharacter(
+                newZombie
+            );
+        }
+
+        /*
+         * Remove dead characters.
+         */
+        world.update();
+    }
+
+    /*
+     * =========================================
+     * START SIMULATION
+     * =========================================
      */
     public void startSimulation() {
 
@@ -148,248 +577,20 @@ public class Test extends JPanel {
     }
 
     /*
-     * Allows main() to add the
-     * FastForward panel to the JFrame
+     * =========================================
+     * FAST FORWARD GETTER
+     * =========================================
      */
     public FastForward getFastForward() {
 
         return fastForward;
     }
 
-    private void updateHumans() {
-
-        /*
-         * Don't update characters until
-         * the JPanel has a real size
-         */
-        if (
-            getWidth() <= 0
-            ||
-            getHeight() <= 0
-        ) {
-
-            return;
-        }
-
-        for (Human human : humans) {
-
-            human.move(
-                getWidth(),
-                getHeight(),
-                zombies,
-                safeZone
-            );
-        }
-    }
-
-    private void updateZombies() {
-
-        /*
-         * Don't update characters until
-         * the JPanel has a real size
-         */
-        if (
-            getWidth() <= 0
-            ||
-            getHeight() <= 0
-        ) {
-
-            return;
-        }
-
-        ArrayList<Human> humansToConvert =
-            new ArrayList<>();
-
-        /*
-         * Update every zombie
-         */
-        for (Zombie zombie : zombies) {
-
-            Human deadHuman =
-                zombie.move(
-                    getWidth(),
-                    getHeight(),
-                    humans,
-                    safeZone
-                );
-
-            /*
-             * If a human reaches 0 health,
-             * prepare them for conversion
-             */
-            if (
-                deadHuman != null
-                &&
-                !humansToConvert.contains(
-                    deadHuman
-                )
-            ) {
-
-                humansToConvert.add(
-                    deadHuman
-                );
-            }
-        }
-
-        /*
-         * Convert dead humans
-         * into full zombies
-         */
-        for (
-            Human human
-            :
-            humansToConvert
-        ) {
-
-            if (
-                humans.remove(
-                    human
-                )
-            ) {
-
-                zombies.add(
-                    new Zombie(
-                        human.getX(),
-                        human.getY()
-                    )
-                );
-            }
-        }
-    }
-
     /*
-     * Weapon logic
+     * =========================================
+     * DRAW SIMULATION
+     * =========================================
      */
-    private void updateWeapon() {
-
-        /*
-         * Check whether a used weapon
-         * should respawn
-         */
-        if (
-            weapon.isCollected()
-            &&
-            weaponUsedTime > 0
-        ) {
-
-            long currentTime =
-                System.currentTimeMillis();
-
-            if (
-                currentTime - weaponUsedTime
-                >= WEAPON_RESPAWN_DELAY
-            ) {
-
-                weapon.respawn();
-
-                weaponUsedTime = 0;
-            }
-        }
-
-        /*
-         * Human collects the weapon
-         */
-        if (!weapon.isCollected()) {
-
-            for (Human human : humans) {
-
-                /*
-                 * Calculate centre
-                 * position of human
-                 */
-                double humanCentreX =
-                    human.getX() + 7.5;
-
-                double humanCentreY =
-                    human.getY() + 7.5;
-
-                /*
-                 * Calculate centre
-                 * position of weapon
-                 */
-                double weaponCentreX =
-                    weapon.getX() + 15.0;
-
-                double weaponCentreY =
-                    weapon.getY() + 5.0;
-
-                /*
-                 * Calculate distance between
-                 * human and weapon
-                 */
-                double distance =
-                    Math.hypot(
-                        humanCentreX - weaponCentreX,
-                        humanCentreY - weaponCentreY
-                    );
-
-                /*
-                 * Collect weapon when
-                 * human reaches it
-                 */
-                if (distance <= 25) {
-
-                    human.collectWeapon();
-
-                    weapon.collect();
-
-                    break;
-                }
-            }
-        }
-
-        /*
-         * Armed human can defeat
-         * one zombie
-         */
-        for (Human human : humans) {
-
-            if (!human.isArmed()) {
-                continue;
-            }
-
-            for (
-                int i = zombies.size() - 1;
-                i >= 0;
-                i--
-            ) {
-
-                Zombie zombie =
-                    zombies.get(i);
-
-                double distance =
-                    Math.hypot(
-                        human.getX() - zombie.getX(),
-                        human.getY() - zombie.getY()
-                    );
-
-                /*
-                 * Armed human defeats zombie
-                 * when close enough
-                 */
-                if (distance <= 22) {
-
-                    zombies.remove(i);
-
-                    /*
-                     * Weapon can only
-                     * be used once
-                     */
-                    human.useWeapon();
-
-                    /*
-                     * Remember when the weapon
-                     * was used so it can respawn
-                     */
-                    weaponUsedTime =
-                        System.currentTimeMillis();
-
-                    return;
-                }
-            }
-        }
-    }
-
     @Override
     protected void paintComponent(
         Graphics g
@@ -398,7 +599,7 @@ public class Test extends JPanel {
         super.paintComponent(g);
 
         /*
-         * Background
+         * BACKGROUND
          */
         g.setColor(
             new Color(
@@ -416,77 +617,123 @@ public class Test extends JPanel {
         );
 
         /*
-         * Draw Safe Zone
+         * =====================================
+         * DRAW BUILDINGS
+         * =====================================
          */
-        safeZone.draw(g);
+        for (Building building : buildings) {
 
-        /*
-         * Draw Weapon
-         */
-        weapon.draw(g);
-
-        /*
-         * Draw Humans
-         */
-        for (
-            Human human
-            :
-            humans
-        ) {
-
-            human.draw(g);
+            building.draw(g);
         }
 
         /*
-         * Draw Zombies
+         * =====================================
+         * DRAW RESOURCES
+         * =====================================
          */
-        for (
-            Zombie zombie
-            :
-            zombies
-        ) {
+        for (Resource resource : resources) {
 
-            zombie.draw(g);
+            resource.draw(g);
         }
 
         /*
-         * Population Counter
+         * =====================================
+         * DRAW SAFE POINT
+         * =====================================
          */
+        safePoint.draw(g);
+
+        /*
+         * =====================================
+         * DRAW CHARACTERS
+         * =====================================
+         */
+        for (
+            Character character
+            :
+            world.getCharacters()
+        ) {
+
+            character.draw(g);
+        }
+
+        /*
+         * =====================================
+         * POPULATION COUNTERS
+         * =====================================
+         */
+        int humanCount =
+            world.getHumans().size();
+
+        int zombieCount =
+            world.getZombies().size();
+
         g.setColor(
             Color.BLACK
         );
 
+        /*
+         * Small counter text so it fits
+         * between Safe Point and Hospital.
+         */
         g.setFont(
             new Font(
                 "Arial",
                 Font.BOLD,
-                16
+                14
             )
         );
 
+        String humanText =
+            "Humans: " + humanCount;
+
+        String zombieText =
+            "Zombies: " + zombieCount;
+
+        FontMetrics fm =
+            g.getFontMetrics();
+
+        int gap = 25;
+
+        int totalWidth =
+            fm.stringWidth(humanText)
+            +
+            gap
+            +
+            fm.stringWidth(zombieText);
+
+        /*
+         * Centre the complete counter.
+         */
+        int startX =
+            (getWidth() - totalWidth) / 2;
+
+        int textY = 28;
+
         g.drawString(
-            "Humans: "
-            + humans.size(),
-            getWidth() - 240,
-            30
+            humanText,
+            startX,
+            textY
         );
 
         g.drawString(
-            "Zombies: "
-            + zombies.size(),
-            getWidth() - 125,
-            30
+            zombieText,
+            startX
+                + fm.stringWidth(humanText)
+                + gap,
+            textY
         );
     }
 
+    /*
+     * =========================================
+     * MAIN
+     * =========================================
+     */
     public static void main(
         String[] args
     ) {
 
-        /*
-         * Create everything on
-         * Swing's Event Dispatch Thread
-         */
         SwingUtilities.invokeLater(
             () -> {
 
@@ -516,8 +763,8 @@ public class Test extends JPanel {
                     );
 
                     /*
-                     * Fast Forward buttons
-                     * at the bottom
+                     * Fast Forward controls
+                     * at the bottom.
                      */
                     frame.add(
                         simulation.getFastForward(),
@@ -529,7 +776,7 @@ public class Test extends JPanel {
                     );
 
                     /*
-                     * Uses preferred size from Test
+                     * Use preferred JPanel size.
                      */
                     frame.pack();
 
@@ -538,35 +785,30 @@ public class Test extends JPanel {
                     );
 
                     /*
-                     * Make window visible first
+                     * Window must become visible
+                     * before simulation begins.
                      */
                     frame.setVisible(
                         true
                     );
 
-                    /*
-                     * Then start simulation
-                     */
                     simulation.startSimulation();
 
-                } catch (RuntimeException exception) {
+                } catch (
+                    RuntimeException exception
+                ) {
 
                     /*
-                     * Display readable error
-                     * if startup fails
+                     * Show readable startup error.
                      */
                     JOptionPane.showMessageDialog(
                         null,
                         "The simulation could not start:\n"
-                        + exception.getMessage(),
+                            + exception.getMessage(),
                         "Simulation Error",
                         JOptionPane.ERROR_MESSAGE
                     );
 
-                    /*
-                     * Technical information
-                     * for debugging
-                     */
                     exception.printStackTrace();
                 }
             }
