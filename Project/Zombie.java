@@ -8,15 +8,15 @@ public class Zombie {
 
     private static final int SIZE = 18;
 
-    // Human speed is 3.0, so zombie is 50% slower
+    // Default zombie speed
     private static final double ZOMBIE_SPEED = 2.0;
 
     private static final double ATTACK_DISTANCE = 15.0;
 
+    // Default zombie damage
     private static final int DAMAGE = 20;
 
     public Zombie(int x, int y) {
-
         this.x = x;
         this.y = y;
     }
@@ -48,7 +48,6 @@ public class Zombie {
             );
 
             if (distance < nearestDistance) {
-
                 nearestDistance = distance;
                 nearestHuman = human;
             }
@@ -63,7 +62,7 @@ public class Zombie {
         if (nearestDistance <= ATTACK_DISTANCE) {
 
             boolean damageDone =
-                nearestHuman.takeDamage(DAMAGE);
+                nearestHuman.takeDamage(getDamage());
 
             // Convert only when health reaches 0
             if (
@@ -71,7 +70,6 @@ public class Zombie {
                 &&
                 nearestHuman.isDead()
             ) {
-
                 return nearestHuman;
             }
 
@@ -88,12 +86,12 @@ public class Zombie {
         double moveX =
             directionX
             / nearestDistance
-            * ZOMBIE_SPEED;
+            * getSpeed();
 
         double moveY =
             directionY
             / nearestDistance
-            * ZOMBIE_SPEED;
+            * getSpeed();
 
         double newX = x + moveX;
         double newY = y + moveY;
@@ -166,7 +164,7 @@ public class Zombie {
 
     public void draw(Graphics g) {
 
-        g.setColor(Color.RED);
+        g.setColor(getColor());
 
         g.fillOval(
             (int) x,
@@ -174,5 +172,19 @@ public class Zombie {
             SIZE,
             SIZE
         );
+    }
+
+    // These methods can be overridden by different zombie types
+
+    protected double getSpeed() {
+        return ZOMBIE_SPEED;
+    }
+
+    protected int getDamage() {
+        return DAMAGE;
+    }
+
+    protected Color getColor() {
+        return Color.RED;
     }
 }
