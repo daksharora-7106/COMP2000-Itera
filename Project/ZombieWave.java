@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Random;
 
 public class ZombieWave {
 
@@ -6,6 +7,9 @@ public class ZombieWave {
 
     private ArrayList<Vector2D> spawnPoints =
         new ArrayList<>();
+
+    private Random random =
+        new Random();
 
     public ZombieWave(
         int count
@@ -45,11 +49,46 @@ public class ZombieWave {
                     spawnPoints.size()
                 );
 
+            int zombieType =
+                random.nextInt(4);
+
+            Zombie zombie;
+
+            if (zombieType == 0) {
+
+                zombie =
+                    new Zombie(
+                        (int) point.getX(),
+                        (int) point.getY()
+                    );
+
+            } else if (zombieType == 1) {
+
+                zombie =
+                    new Runner(
+                        (int) point.getX(),
+                        (int) point.getY()
+                    );
+
+            } else if (zombieType == 2) {
+
+                zombie =
+                    new Stalker(
+                        (int) point.getX(),
+                        (int) point.getY()
+                    );
+
+            } else {
+
+                zombie =
+                    new Bloater(
+                        (int) point.getX(),
+                        (int) point.getY()
+                    );
+            }
+
             world.addCharacter(
-                new Zombie(
-                    (int) point.getX(),
-                    (int) point.getY()
-                )
+                zombie
             );
         }
     }
