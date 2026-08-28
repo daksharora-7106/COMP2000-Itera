@@ -783,8 +783,8 @@ class Zombie extends Character {
         ) {
 
             boolean attacked =
-                target.receiveZombieHit(
-                    DAMAGE
+                performAttack(
+                    target
                 );
 
             if (
@@ -860,6 +860,15 @@ class Zombie extends Character {
         }
 
         return closest;
+    }
+
+    protected boolean performAttack(
+        Human target
+    ) {
+
+        return target.receiveZombieHit(
+            DAMAGE
+        );
     }
 
     public void attack(
@@ -1036,6 +1045,8 @@ class Stalker extends Zombie {
 
     private int stealth = 100;
 
+    private static final int AMBUSH_DAMAGE = 30;
+
     public Stalker(
         int x,
         int y
@@ -1050,7 +1061,32 @@ class Stalker extends Zombie {
         Character target
     ) {
 
-        target.takeDamage(30);
+        if (target instanceof Human human) {
+
+            human.receiveZombieHit(
+                AMBUSH_DAMAGE
+            );
+
+        } else {
+
+            target.takeDamage(
+                AMBUSH_DAMAGE
+            );
+        }
+    }
+
+    @Override
+    protected boolean performAttack(
+        Human target
+    ) {
+
+        int healthBefore =
+            target.getHealth();
+
+        ambush(target);
+
+        return target.getHealth()
+            < healthBefore;
     }
 
     @Override
