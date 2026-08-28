@@ -481,6 +481,36 @@ public class Test extends JPanel {
 
         for (Zombie zombie : zombies) {
 
+            /*
+             * Bloaters explode when a human
+             * enters their blast radius.
+             */
+            if (
+                zombie instanceof Bloater bloater
+                &&
+                bloater.shouldExplode(humans)
+            ) {
+
+                ArrayList<Human> explosionDeaths =
+                    bloater.explode(humans);
+
+                for (Human human : explosionDeaths) {
+
+                    if (
+                        !convertedHumans.contains(
+                            human
+                        )
+                    ) {
+
+                        convertedHumans.add(
+                            human
+                        );
+                    }
+                }
+
+                continue;
+            }
+
             Human deadHuman =
                 zombie.update(
                     getWidth(),

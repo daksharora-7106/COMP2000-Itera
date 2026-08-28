@@ -1083,6 +1083,7 @@ class Stalker extends Zombie {
 class Bloater extends Zombie {
 
     private double blastRadius = 60;
+    private int blastDamage = 60;
 
     public Bloater(
         int x,
@@ -1096,9 +1097,62 @@ class Bloater extends Zombie {
         size = 22;
     }
 
-    public void explode() {
+    public boolean shouldExplode(
+        ArrayList<Human> humans
+    ) {
+
+        for (Human human : humans) {
+
+            if (human.isInSafePoint()) {
+                continue;
+            }
+
+            double distance =
+                position.distanceTo(
+                    human.getPosition()
+                );
+
+            if (distance <= blastRadius) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public ArrayList<Human> explode(
+        ArrayList<Human> humans
+    ) {
+
+        ArrayList<Human> killedHumans =
+            new ArrayList<>();
+
+        for (Human human : humans) {
+
+            if (human.isInSafePoint()) {
+                continue;
+            }
+
+            double distance =
+                position.distanceTo(
+                    human.getPosition()
+                );
+
+            if (distance <= blastRadius) {
+
+                human.takeDamage(
+                    blastDamage
+                );
+
+                if (!human.isAlive()) {
+                    killedHumans.add(human);
+                }
+            }
+        }
 
         health = 0;
+
+        return killedHumans;
     }
 
     public double getBlastRadius() {
