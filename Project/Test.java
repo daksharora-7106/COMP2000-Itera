@@ -25,6 +25,17 @@ public class Test extends JPanel {
 
     private Timer timer;
 
+    /*
+     * =========================================
+     * TIMED ZOMBIE WAVES
+     * =========================================
+     */
+    private static final long WAVE_INTERVAL = 15000;
+    private static final int ZOMBIES_PER_WAVE = 4;
+
+    private long lastWaveTime;
+    private int waveNumber = 0;
+
     public Test() {
 
         setPreferredSize(
@@ -393,6 +404,75 @@ public class Test extends JPanel {
 
     /*
      * =========================================
+     * TIMED ZOMBIE WAVE SPAWNING
+     * =========================================
+     */
+    private void updateTimedWaves() {
+
+        long now =
+            System.currentTimeMillis();
+
+        if (
+            now - lastWaveTime
+            < WAVE_INTERVAL
+        ) {
+
+            return;
+        }
+
+        waveNumber++;
+
+        ZombieWave wave =
+            new ZombieWave(
+                ZOMBIES_PER_WAVE
+            );
+
+        /*
+         * Spawn points are kept away from
+         * the four corner buildings.
+         */
+        wave.addSpawnPoint(
+            new Vector2D(
+                300,
+                30
+            )
+        );
+
+        wave.addSpawnPoint(
+            new Vector2D(
+                WORLD_WIDTH - 300,
+                30
+            )
+        );
+
+        wave.addSpawnPoint(
+            new Vector2D(
+                220,
+                WORLD_HEIGHT / 2
+            )
+        );
+
+        wave.addSpawnPoint(
+            new Vector2D(
+                WORLD_WIDTH - 220,
+                WORLD_HEIGHT / 2
+            )
+        );
+
+        world.addWave(
+            wave
+        );
+
+        world.spawnWave(
+            wave
+        );
+
+        lastWaveTime =
+            now;
+    }
+
+    /*
+     * =========================================
      * UPDATE SIMULATION
      * =========================================
      */
@@ -410,6 +490,12 @@ public class Test extends JPanel {
 
             return;
         }
+
+        /*
+         * Spawn a new mixed zombie wave
+         * at fixed time intervals.
+         */
+        updateTimedWaves();
 
         var humans =
             world.getHumans();
@@ -602,6 +688,9 @@ public class Test extends JPanel {
      * =========================================
      */
     public void startSimulation() {
+
+        lastWaveTime =
+            System.currentTimeMillis();
 
         timer.start();
     }
