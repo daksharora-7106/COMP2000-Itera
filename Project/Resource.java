@@ -333,17 +333,35 @@ class Weapon extends Resource {
             durability;
     }
 
-    public void fire(
+    /*
+     * Checks whether the weapon
+     * currently has ammunition and
+     * enough durability to fire.
+     */
+    public boolean canFire() {
+
+        return quantity > 0
+            &&
+            durability > 0;
+    }
+
+    /*
+     * Fire the weapon at a target.
+     *
+     * Returns true if a shot was
+     * successfully fired.
+     */
+    public boolean fire(
         Character target
     ) {
 
         if (
-            durability <= 0
+            target == null
             ||
-            quantity <= 0
+            !canFire()
         ) {
 
-            return;
+            return false;
         }
 
         target.takeDamage(
@@ -353,6 +371,35 @@ class Weapon extends Resource {
         durability--;
 
         quantity--;
+
+        return true;
+    }
+
+    public int getDamage() {
+        return damage;
+    }
+
+    public int getAmmo() {
+        return quantity;
+    }
+
+    public int getDurability() {
+        return durability;
+    }
+
+    /*
+     * Allows ammunition to be
+     * replenished later.
+     */
+    public void addAmmo(
+        int amount
+    ) {
+
+        if (amount > 0) {
+
+            quantity +=
+                amount;
+        }
     }
 
     @Override
@@ -372,7 +419,9 @@ class Weapon extends Resource {
             return;
         }
 
-        g.setColor(Color.DARK_GRAY);
+        g.setColor(
+            Color.DARK_GRAY
+        );
 
         g.fillRect(
             x,

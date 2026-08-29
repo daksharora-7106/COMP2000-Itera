@@ -646,6 +646,12 @@ class Soldier extends Human {
 
     private int ammo = 10;
 
+    private static final int SOLDIER_DAMAGE = 20;
+    private static final double SHOOT_RANGE = 180;
+    private static final long SHOOT_COOLDOWN = 700;
+
+    private long lastShotTime = 0;
+
     public Soldier(
         int x,
         int y
@@ -654,16 +660,151 @@ class Soldier extends Human {
         super(x, y);
     }
 
-    public void shoot(
+    @Override
+    public void update(
+        int worldWidth,
+        int worldHeight,
+        ArrayList<Zombie> zombies,
+        SafePoint safePoint
+    ) {
+
+        super.update(
+            worldWidth,
+            worldHeight,
+            zombies,
+            safePoint
+        );
+
+        Zombie target =
+            findNearestAliveZombie(
+                zombies
+            );
+
+        if (target == null) {
+            return;
+        }
+
+        double distance =
+            position.distanceTo(
+                target.getPosition()
+            );
+
+        if (distance > SHOOT_RANGE) {
+            return;
+        }
+
+        long now =
+            System.currentTimeMillis();
+
+        if (
+            now - lastShotTime
+            < SHOOT_COOLDOWN
+        ) {
+
+            return;
+        }
+
+        Weapon weapon =
+            findUsableWeapon();
+
+        boolean fired;
+
+        if (weapon != null) {
+
+            fired =
+                weapon.fire(
+                    target
+                );
+
+        } else {
+
+            fired =
+                shoot(
+                    target
+                );
+        }
+
+        if (fired) {
+
+            lastShotTime =
+                now;
+        }
+    }
+
+    public boolean shoot(
         Character target
     ) {
 
-        if (ammo > 0) {
+        if (
+            target == null
+            ||
+            ammo <= 0
+        ) {
 
-            target.takeDamage(20);
-
-            ammo--;
+            return false;
         }
+
+        target.takeDamage(
+            SOLDIER_DAMAGE
+        );
+
+        ammo--;
+
+        return true;
+    }
+
+    private Weapon findUsableWeapon() {
+
+        for (Resource resource : inventory) {
+
+            if (
+                resource instanceof Weapon weapon
+                &&
+                weapon.canFire()
+            ) {
+
+                return weapon;
+            }
+        }
+
+        return null;
+    }
+
+    private Zombie findNearestAliveZombie(
+        ArrayList<Zombie> zombies
+    ) {
+
+        Zombie nearest = null;
+
+        double nearestDistance =
+            Double.MAX_VALUE;
+
+        for (Zombie zombie : zombies) {
+
+            if (!zombie.isAlive()) {
+                continue;
+            }
+
+            double distance =
+                position.distanceTo(
+                    zombie.getPosition()
+                );
+
+            if (distance < nearestDistance) {
+
+                nearestDistance =
+                    distance;
+
+                nearest =
+                    zombie;
+            }
+        }
+
+        return nearest;
+    }
+
+    public int getAmmo() {
+        return ammo;
     }
 
     @Override
@@ -759,6 +900,10 @@ class Zombie extends Character {
         SafePoint safePoint
     ) {
 
+        if (!isAlive()) {
+            return null;
+        }
+
         Human target =
             findClosestHuman(
                 humans
@@ -783,8 +928,8 @@ class Zombie extends Character {
         ) {
 
             boolean attacked =
-                target.receiveZombieHit(
-                    DAMAGE
+                performAttack(
+                    target
                 );
 
             if (
@@ -860,6 +1005,15 @@ class Zombie extends Character {
         }
 
         return closest;
+    }
+
+    protected boolean performAttack(
+        Human target
+    ) {
+
+        return target.receiveZombieHit(
+            DAMAGE
+        );
     }
 
     public void attack(
@@ -987,7 +1141,16 @@ class Zombie extends Character {
  */
 class Runner extends Zombie {
 
-    private double sprintSpeed = 2.0;
+    private static final double SPRINT_SPEED = 2.0;
+    private static final double BURST_SPEED = 3.2;
+
+    private static final double BURST_RANGE = 150;
+
+    private static final long BURST_DURATION = 1200;
+    private static final long BURST_COOLDOWN = 3000;
+
+    private long burstEndTime = 0;
+    private long lastBurstTime = 0;
 
     public Runner(
         int x,
@@ -995,18 +1158,81 @@ class Runner extends Zombie {
     ) {
 
         super(x, y);
+
+        sprint();
     }
 
     public void sprint() {
 
         speed =
-            sprintSpeed;
+            SPRINT_SPEED;
     }
 
     @Override
-    public void draw(Graphics g) {
+    public Human update(
+        int worldWidth,
+        int worldHeight,
+        ArrayList<Human> humans,
+        SafePoint safePoint
+    ) {
 
-        g.setColor(Color.RED);
+        long now =
+            System.currentTimeMillis();
+
+        Human target =
+            findClosestHuman(
+                humans
+            );
+
+        if (target != null) {
+
+            double distance =
+                position.distanceTo(
+                    target.getPosition()
+                );
+
+            if (
+                distance <= BURST_RANGE
+                &&
+                now - lastBurstTime
+                    >= BURST_COOLDOWN
+            ) {
+
+                burstEndTime =
+                    now + BURST_DURATION;
+
+                lastBurstTime =
+                    now;
+            }
+        }
+
+        if (now < burstEndTime) {
+
+            speed =
+                BURST_SPEED;
+
+        } else {
+
+            speed =
+                SPRINT_SPEED;
+        }
+
+        return super.update(
+            worldWidth,
+            worldHeight,
+            humans,
+            safePoint
+        );
+    }
+
+    @Override
+    public void draw(
+        Graphics g
+    ) {
+
+        g.setColor(
+            Color.ORANGE
+        );
 
         g.fillOval(
             getX(),
@@ -1030,25 +1256,58 @@ class Stalker extends Zombie {
 
     private int stealth = 100;
 
+    private static final int AMBUSH_DAMAGE = 30;
+
     public Stalker(
         int x,
         int y
     ) {
 
         super(x, y);
+
+        speed = 1.2;
     }
 
     public void ambush(
         Character target
     ) {
 
-        target.takeDamage(30);
+        if (target instanceof Human human) {
+
+            human.receiveZombieHit(
+                AMBUSH_DAMAGE
+            );
+
+        } else {
+
+            target.takeDamage(
+                AMBUSH_DAMAGE
+            );
+        }
     }
 
     @Override
-    public void draw(Graphics g) {
+    protected boolean performAttack(
+        Human target
+    ) {
 
-        g.setColor(Color.RED);
+        int healthBefore =
+            target.getHealth();
+
+        ambush(target);
+
+        return target.getHealth()
+            < healthBefore;
+    }
+
+    @Override
+    public void draw(
+        Graphics g
+    ) {
+
+        g.setColor(
+            Color.MAGENTA
+        );
 
         g.fillOval(
             getX(),
@@ -1071,6 +1330,7 @@ class Stalker extends Zombie {
 class Bloater extends Zombie {
 
     private double blastRadius = 60;
+    private int blastDamage = 60;
 
     public Bloater(
         int x,
@@ -1078,11 +1338,72 @@ class Bloater extends Zombie {
     ) {
 
         super(x, y);
+
+        health = 150;
+        speed = 0.8;
+        size = 22;
     }
 
-    public void explode() {
+    public boolean shouldExplode(
+        ArrayList<Human> humans
+    ) {
+
+        if (!isAlive()) {
+            return false;
+        }
+
+        for (Human human : humans) {
+
+            if (human.isInSafePoint()) {
+                continue;
+            }
+
+            double distance =
+                position.distanceTo(
+                    human.getPosition()
+                );
+
+            if (distance <= blastRadius) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public ArrayList<Human> explode(
+        ArrayList<Human> humans
+    ) {
+
+        ArrayList<Human> killedHumans =
+            new ArrayList<>();
+
+        for (Human human : humans) {
+
+            if (human.isInSafePoint()) {
+                continue;
+            }
+
+            double distance =
+                position.distanceTo(
+                    human.getPosition()
+                );
+
+            if (distance <= blastRadius) {
+
+                human.takeDamage(
+                    blastDamage
+                );
+
+                if (!human.isAlive()) {
+                    killedHumans.add(human);
+                }
+            }
+        }
 
         health = 0;
+
+        return killedHumans;
     }
 
     public double getBlastRadius() {
@@ -1090,9 +1411,13 @@ class Bloater extends Zombie {
     }
 
     @Override
-    public void draw(Graphics g) {
+    public void draw(
+        Graphics g
+    ) {
 
-        g.setColor(Color.RED);
+        g.setColor(
+            Color.DARK_GRAY
+        );
 
         g.fillOval(
             getX(),
