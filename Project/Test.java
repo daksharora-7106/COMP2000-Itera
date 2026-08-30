@@ -31,7 +31,9 @@ public class Test extends JPanel {
      * =========================================
      */
     private static final long WAVE_INTERVAL = 15000;
-    private static final int ZOMBIES_PER_WAVE = 4;
+
+    private static final int BASE_ZOMBIES_PER_WAVE = 4;
+    private static final int ZOMBIES_ADDED_PER_WAVE = 2;
 
     private long lastWaveTime;
     private int waveNumber = 1;
@@ -422,9 +424,24 @@ public class Test extends JPanel {
 
         waveNumber++;
 
+        /*
+         * Each new wave contains two more
+         * zombies than the previous wave.
+         *
+         * Wave 1 = 4
+         * Wave 2 = 6
+         * Wave 3 = 8
+         * Wave 4 = 10
+         */
+        int zombiesThisWave =
+            BASE_ZOMBIES_PER_WAVE
+            +
+            (waveNumber - 1)
+            * ZOMBIES_ADDED_PER_WAVE;
+
         ZombieWave wave =
             new ZombieWave(
-                ZOMBIES_PER_WAVE
+                zombiesThisWave
             );
 
         /*
