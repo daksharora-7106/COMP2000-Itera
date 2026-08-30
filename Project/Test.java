@@ -34,7 +34,7 @@ public class Test extends JPanel {
     private static final int ZOMBIES_PER_WAVE = 4;
 
     private long lastWaveTime;
-    private int waveNumber = 0;
+    private int waveNumber = 1;
 
     public Test() {
 
@@ -707,6 +707,33 @@ public class Test extends JPanel {
 
     /*
      * =========================================
+     * NEXT WAVE COUNTDOWN
+     * =========================================
+     */
+    private long getNextWaveSeconds() {
+
+        if (lastWaveTime == 0) {
+
+            return WAVE_INTERVAL / 1000;
+        }
+
+        long elapsed =
+            System.currentTimeMillis()
+            - lastWaveTime;
+
+        long remaining =
+            Math.max(
+                0,
+                WAVE_INTERVAL - elapsed
+            );
+
+        return (
+            remaining + 999
+        ) / 1000;
+    }
+
+    /*
+     * =========================================
      * DRAW SIMULATION
      * =========================================
      */
@@ -778,7 +805,7 @@ public class Test extends JPanel {
 
         /*
          * =====================================
-         * POPULATION COUNTERS
+         * SIMULATION STATUS DISPLAY
          * =====================================
          */
         int humanCount =
@@ -787,12 +814,15 @@ public class Test extends JPanel {
         int zombieCount =
             world.getZombies().size();
 
+        long nextWaveSeconds =
+            getNextWaveSeconds();
+
         g.setColor(
             Color.BLACK
         );
 
         /*
-         * Small counter text so it fits
+         * Compact status text so it fits
          * between Safe Point and Hospital.
          */
         g.setFont(
@@ -809,37 +839,74 @@ public class Test extends JPanel {
         String zombieText =
             "Zombies: " + zombieCount;
 
+        String waveText =
+            "Wave: " + waveNumber;
+
+        String nextWaveText =
+            "Next wave: "
+            + nextWaveSeconds
+            + "s";
+
         FontMetrics fm =
             g.getFontMetrics();
 
-        int gap = 25;
+        int gap = 22;
 
         int totalWidth =
             fm.stringWidth(humanText)
             +
-            gap
+            fm.stringWidth(zombieText)
             +
-            fm.stringWidth(zombieText);
+            fm.stringWidth(waveText)
+            +
+            fm.stringWidth(nextWaveText)
+            +
+            gap * 3;
 
         /*
-         * Centre the complete counter.
+         * Centre the complete status display.
          */
         int startX =
             (getWidth() - totalWidth) / 2;
 
         int textY = 28;
 
+        int currentX =
+            startX;
+
         g.drawString(
             humanText,
-            startX,
+            currentX,
             textY
         );
 
+        currentX +=
+            fm.stringWidth(humanText)
+            + gap;
+
         g.drawString(
             zombieText,
-            startX
-                + fm.stringWidth(humanText)
-                + gap,
+            currentX,
+            textY
+        );
+
+        currentX +=
+            fm.stringWidth(zombieText)
+            + gap;
+
+        g.drawString(
+            waveText,
+            currentX,
+            textY
+        );
+
+        currentX +=
+            fm.stringWidth(waveText)
+            + gap;
+
+        g.drawString(
+            nextWaveText,
+            currentX,
             textY
         );
     }
