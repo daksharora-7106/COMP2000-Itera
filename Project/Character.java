@@ -6,9 +6,7 @@ public abstract class Character {
 
     protected int health;
     protected double speed;
-
     protected Vector2D position;
-
     protected int size;
 
     public Character(
@@ -21,10 +19,7 @@ public abstract class Character {
 
         this.health = health;
         this.speed = speed;
-
-        this.position =
-            new Vector2D(x, y);
-
+        this.position = new Vector2D(x, y);
         this.size = size;
     }
 
@@ -83,6 +78,10 @@ public abstract class Character {
 class Human extends Character {
 
     protected int stamina = 100;
+
+    protected static final int MAX_STAMINA = 100;
+    protected static final int STAMINA_DRAIN = 1;
+    protected static final int STAMINA_RECOVERY = 1;
 
     protected ArrayList<Resource> inventory =
         new ArrayList<>();
@@ -149,6 +148,7 @@ class Human extends Character {
             dy = 0;
 
             healInsideSafePoint();
+            recoverStamina();
 
             if (health >= 80) {
 
@@ -229,14 +229,18 @@ class Human extends Character {
                         worldHeight
                     );
 
+                    drainStamina();
+
                 } else {
 
                     roam();
+                    recoverStamina();
                 }
 
             } else {
 
                 roam();
+                recoverStamina();
             }
         }
 
@@ -356,16 +360,55 @@ class Human extends Character {
 
         if (length > 0) {
 
+            double fleeSpeed = speed;
+
+            /*
+             * A tired human moves more slowly
+             * until some stamina is recovered.
+             */
+            if (stamina <= 0) {
+                fleeSpeed = speed * 0.5;
+            }
+
             dx =
                 directionX
                 / length
-                * speed;
+                * fleeSpeed;
 
             dy =
                 directionY
                 / length
-                * speed;
+                * fleeSpeed;
         }
+    }
+
+    /*
+     * Reduce stamina while escaping zombies.
+     */
+    protected void drainStamina() {
+
+        stamina -= STAMINA_DRAIN;
+
+        if (stamina < 0) {
+            stamina = 0;
+        }
+    }
+
+    /*
+     * Recover stamina when the human
+     * is not actively fleeing.
+     */
+    protected void recoverStamina() {
+
+        stamina += STAMINA_RECOVERY;
+
+        if (stamina > MAX_STAMINA) {
+            stamina = MAX_STAMINA;
+        }
+    }
+
+    public int getStamina() {
+        return stamina;
     }
 
     protected void moveTowardsSafePoint(
@@ -579,10 +622,6 @@ class Human extends Character {
         );
     }
 
-    /*
-     * Draw a short character type label
-     * underneath the character.
-     */
     protected void drawTypeLabel(
         Graphics g,
         String label
