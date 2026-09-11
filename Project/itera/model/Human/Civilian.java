@@ -1,4 +1,4 @@
-package itera.model;
+package itera.model.Human;
 
 import java.awt.Graphics;
 
@@ -11,6 +11,10 @@ public class Civilian extends Human {
 
     public void flee() {
         fearLevel++;
+    }
+
+    public int getFearLevel() {
+        return fearLevel;
     }
 
     @Override

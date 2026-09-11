@@ -1,4 +1,7 @@
-package itera.model;
+package itera.model.Building;
+
+import itera.model.Human.Human;
+import itera.model.Resource.Resource;
 
 import java.awt.Color;
 import java.awt.Font;
@@ -36,6 +39,13 @@ public abstract class Building {
         return true;
     }
 
+    /**
+     * Checks whether an object's top-left position falls inside this building.
+     *
+     * @param objectX the object's x-coordinate
+     * @param objectY the object's y-coordinate
+     * @return {@code true} when the position is within the building bounds
+     */
     public boolean contains(int objectX, int objectY) {
 
         return objectX >= x && objectX <= x + width && objectY >= y && objectY <= y + height;
@@ -64,6 +74,7 @@ public abstract class Building {
 
         Resource resource = loot();
 
+        // A building can be visited after its stock has already been emptied.
         if (resource != null) {
 
             human.addResource(resource);
@@ -94,6 +105,7 @@ public abstract class Building {
 
         drawBuildingBody(g);
 
+        // Draw the shared outline and status text after the subclass-specific body.
         g.setColor(Color.BLACK);
 
         g.drawRect(x, y, width, height);

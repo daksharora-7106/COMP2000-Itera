@@ -1,4 +1,10 @@
-package itera.model;
+package itera.model.Human;
+
+import itera.model.Character;
+import itera.model.Resource.Resource;
+import itera.model.Resource.Weapon;
+import itera.model.SafePoint;
+import itera.model.Zombie.Zombie;
 
 import java.awt.Graphics;
 import java.util.ArrayList;

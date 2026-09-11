@@ -1,10 +1,10 @@
 package itera.simulation;
 
-import itera.model.Bloater;
-import itera.model.Runner;
-import itera.model.Stalker;
+import itera.model.Zombie.Bloater;
+import itera.model.Zombie.Runner;
+import itera.model.Zombie.Stalker;
 import itera.model.Vector2D;
-import itera.model.Zombie;
+import itera.model.Zombie.Zombie;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -27,6 +27,12 @@ public class ZombieWave {
         spawnPoints.add(point);
     }
 
+    /**
+     * Creates the configured number of zombies and places them at the spawn
+     * points in round-robin order.
+     *
+     * @param world the world that receives the spawned zombies
+     */
     public void trigger(World world) {
 
         if (spawnPoints.isEmpty()) {
@@ -35,6 +41,7 @@ public class ZombieWave {
 
         for (int i = 0; i < count; i++) {
 
+            // Reuse spawn points cyclically when the wave is larger than the list.
             Vector2D point = spawnPoints.get(i % spawnPoints.size());
 
             int zombieType = random.nextInt(4);

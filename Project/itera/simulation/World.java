@@ -1,11 +1,11 @@
 package itera.simulation;
 
-import itera.model.Building;
+import itera.model.Building.Building;
 import itera.model.Character;
-import itera.model.Human;
-import itera.model.Resource;
+import itera.model.Human.Human;
+import itera.model.Resource.Resource;
 import itera.model.SafePoint;
-import itera.model.Zombie;
+import itera.model.Zombie.Zombie;
 
 import java.util.ArrayList;
 
@@ -48,6 +48,8 @@ public class World {
 
     public void update() {
 
+        // Dead characters remain until this cleanup step so the current tick can
+        // finish processing deaths and conversions consistently.
         characters.removeIf(character -> !character.isAlive());
     }
 
@@ -78,6 +80,7 @@ public class World {
 
         ArrayList<Human> humans = new ArrayList<>();
 
+        // Build a typed view without exposing the mixed character list directly.
         for (Character character : characters) {
 
             if (character instanceof Human human) {
@@ -93,6 +96,7 @@ public class World {
 
         ArrayList<Zombie> zombies = new ArrayList<>();
 
+        // Keep callers from needing repeated instanceof checks for every character.
         for (Character character : characters) {
 
             if (character instanceof Zombie zombie) {

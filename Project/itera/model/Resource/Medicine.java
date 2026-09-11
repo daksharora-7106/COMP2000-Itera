@@ -1,4 +1,6 @@
-package itera.model;
+package itera.model.Resource;
+
+import itera.model.Character;
 
 import java.awt.Color;
 import java.awt.Graphics;
@@ -28,12 +30,7 @@ public class Medicine extends Resource {
             return;
         }
 
-        target.health += healAmount;
-
-        if (target.health > 100) {
-
-            target.health = 100;
-        }
+        target.restoreHealth(healAmount);
 
         quantity--;
     }

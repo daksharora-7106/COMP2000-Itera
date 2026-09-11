@@ -1,4 +1,7 @@
-package itera.model;
+package itera.model.Zombie;
+
+import itera.model.Human.Human;
+import itera.model.SafePoint;
 
 import java.awt.Color;
 import java.awt.Graphics;

@@ -1,4 +1,7 @@
-package itera.model;
+package itera.model.Resource;
+
+import itera.model.Character;
+import itera.model.Human.Human;
 
 import java.awt.Color;
 import java.awt.Graphics;
@@ -30,12 +33,7 @@ public class Food extends Resource {
 
         if (target instanceof Human human) {
 
-            human.stamina += nutrition;
-
-            if (human.stamina > 100) {
-
-                human.stamina = 100;
-            }
+            human.restoreStamina(nutrition);
 
             quantity--;
         }

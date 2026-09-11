@@ -1,4 +1,8 @@
-package itera.model;
+package itera.model.Zombie;
+
+import itera.model.Character;
+import itera.model.Human.Human;
+import itera.model.SafePoint;
 
 import java.awt.Color;
 import java.awt.Font;
@@ -20,6 +24,8 @@ public class Zombie extends Character {
 
     /**
      * Moves towards or attacks the nearest eligible human for one simulation step.
+        * Zombies ignore dead humans and humans inside the safe point. If movement
+        * would enter the safe point, the previous position is restored.
      *
      * @param worldWidth the width of the simulation area
      * @param worldHeight the height of the simulation area
@@ -52,6 +58,7 @@ public class Zombie extends Character {
 
         if (distance <= ATTACK_DISTANCE) {
 
+            // Subclasses can replace the normal attack with their own behavior.
             boolean attacked = performAttack(target);
 
             if (attacked && !target.isAlive()) {
@@ -74,6 +81,7 @@ public class Zombie extends Character {
 
         if (safePoint.wouldZombieEnter(nextX, nextY, size)) {
 
+            // Zombies may approach the safe point but cannot cross its boundary.
             position.setX(previousX);
 
             position.setY(previousY);

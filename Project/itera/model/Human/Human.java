@@ -1,4 +1,11 @@
-package itera.model;
+package itera.model.Human;
+
+import itera.model.Building.Building;
+import itera.model.Character;
+import itera.model.Resource.Resource;
+import itera.model.SafePoint;
+import itera.model.Vector2D;
+import itera.model.Zombie.Zombie;
 
 import java.awt.Color;
 import java.awt.Font;
@@ -70,6 +77,16 @@ public class Human extends Character {
         }
     }
 
+    /**
+     * Performs one human simulation step. Humans in the safe point heal and
+     * recover stamina; injured humans move toward it, while healthy humans
+     * avoid nearby zombies and continue roaming.
+     *
+     * @param worldWidth the width of the simulation area
+     * @param worldHeight the height of the simulation area
+     * @param zombies the zombies that may influence movement
+     * @param safePoint the protected area used for healing and collision checks
+     */
     public void update(int worldWidth, int worldHeight, ArrayList<Zombie> zombies, SafePoint safePoint) {
 
         if (insideSafePoint) {
@@ -82,6 +99,7 @@ public class Human extends Character {
 
             if (health >= 80) {
 
+                // Leave through the door once enough health has been restored.
                 insideSafePoint = false;
 
                 position.setX(safePoint.getDoorX() + 20);
@@ -102,6 +120,7 @@ public class Human extends Character {
 
             if (distance <= 25) {
 
+                // Store the human at a valid interior position while healing.
                 insideSafePoint = true;
 
                 Vector2D restPosition = safePoint.getRandomRestPosition(random, size);
@@ -128,6 +147,7 @@ public class Human extends Character {
 
                 if (distance <= DETECTION_RANGE) {
 
+                    // Nearby danger takes priority over normal wandering.
                     fleeFrom(nearestZombie, worldWidth, worldHeight);
 
                     drainStamina();
@@ -151,6 +171,7 @@ public class Human extends Character {
 
         if (safePoint.blocksHumanMovement(position.getX(), position.getY(), nextX, nextY, size, health <= 20)) {
 
+            // Choose another direction instead of entering a blocked area.
             chooseRandomDirection();
 
         } else {
@@ -246,6 +267,15 @@ public class Human extends Character {
     protected void recoverStamina() {
 
         stamina += STAMINA_RECOVERY;
+
+        if (stamina > MAX_STAMINA) {
+            stamina = MAX_STAMINA;
+        }
+    }
+
+    public void restoreStamina(int amount) {
+
+        stamina += amount;
 
         if (stamina > MAX_STAMINA) {
             stamina = MAX_STAMINA;

@@ -1,39 +1,18 @@
 package itera.ui;
 
-import itera.model.Bloater;
-import itera.model.Building;
+import itera.model.Building.*;
 import itera.model.Character;
-import itera.model.Civilian;
-import itera.model.ConvenienceStore;
-import itera.model.Food;
-import itera.model.Hospital;
-import itera.model.Human;
-import itera.model.Medic;
-import itera.model.Medicine;
-import itera.model.PoliceStation;
-import itera.model.Resource;
-import itera.model.Runner;
+import itera.model.Human.*;
+import itera.model.Resource.*;
 import itera.model.SafePoint;
-import itera.model.Soldier;
-import itera.model.Stalker;
 import itera.model.Vector2D;
-import itera.model.Weapon;
-import itera.model.Zombie;
-import itera.simulation.World;
-import itera.simulation.ZombieWave;
+import itera.model.Zombie.*;
+import itera.simulation.*;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.Graphics;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Random;
-import javax.swing.JFrame;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 import javax.swing.Timer;
 
 @SuppressWarnings({"serial", "this-escape"})
@@ -167,11 +146,16 @@ public class Test extends JPanel {
 
         timer = new Timer(30, e -> {
 
-            timer.setDelay(fastForward.getDelay());
+            try {
+                timer.setDelay(fastForward.getDelay());
 
-            updateSimulation();
+                updateSimulation();
 
-            repaint();
+                repaint();
+            } catch (RuntimeException exception) {
+                timer.stop();
+                showSimulationError(exception);
+            }
         });
     }
 
@@ -239,6 +223,10 @@ public class Test extends JPanel {
         lastWaveTime = now;
     }
 
+    /**
+     * Advances the simulation by one timer tick: waves are spawned, humans and
+     * zombies act, deaths are converted, and dead characters are removed.
+     */
     private void updateSimulation() {
 
         /* Do not update until the panel has a valid size. */
@@ -281,6 +269,7 @@ public class Test extends JPanel {
 
         ArrayList<Human> convertedHumans = new ArrayList<>();
 
+        // Record deaths first so conversions happen after all zombies have acted.
         for (Zombie zombie : zombies) {
 
             /* Bloaters explode when a human enters their blast radius. */
@@ -341,9 +330,23 @@ public class Test extends JPanel {
 
     public void startSimulation() {
 
-        lastWaveTime = System.currentTimeMillis();
+        try {
+            lastWaveTime = System.currentTimeMillis();
 
-        timer.start();
+            timer.start();
+        } catch (RuntimeException exception) {
+            showSimulationError(exception);
+        }
+    }
+
+    private void showSimulationError(RuntimeException exception) {
+
+        JOptionPane.showMessageDialog(this,
+            "The simulation encountered an error:\n" + exception.getMessage(),
+            "Simulation Error",
+            JOptionPane.ERROR_MESSAGE);
+
+        exception.printStackTrace();
     }
 
     public FastForward getFastForward() {

@@ -1,4 +1,6 @@
-package itera.model;
+package itera.model.Resource;
+
+import itera.model.Character;
 
 import java.awt.Graphics;
 

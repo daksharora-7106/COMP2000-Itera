@@ -1,4 +1,6 @@
-package itera.model;
+package itera.model.Human;
+
+import itera.model.Character;
 
 import java.awt.Graphics;
 
@@ -10,12 +12,8 @@ public class Medic extends Human {
     }
 
     public void heal(Character target) {
-        if (medKits > 0 && target.health < 100) {
-            target.health += 20;
-
-            if (target.health > 100) {
-                target.health = 100;
-            }
+        if (medKits > 0 && target.getHealth() < 100) {
+            target.restoreHealth(20);
 
             medKits--;
         }

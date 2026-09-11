@@ -35,6 +35,15 @@ public abstract class Character {
         }
     }
 
+    public void restoreHealth(int amount) {
+
+        health += amount;
+
+        if (health > 100) {
+            health = 100;
+        }
+    }
+
     public int getHealth() {
         return health;
     }

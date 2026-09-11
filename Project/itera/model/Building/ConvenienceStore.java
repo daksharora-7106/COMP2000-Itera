@@ -1,4 +1,7 @@
-package itera.model;
+package itera.model.Building;
+
+import itera.model.Resource.Food;
+import itera.model.Resource.Resource;
 
 import java.awt.Color;
 import java.awt.Graphics;

@@ -1,4 +1,7 @@
-package itera.model;
+package itera.model.Building;
+
+import itera.model.Character;
+import itera.model.Resource.Medicine;
 
 import java.awt.Color;
 import java.awt.Graphics;
@@ -14,12 +17,7 @@ public class Hospital extends Building {
 
     public void treat(Character character) {
 
-        character.health += 20;
-
-        if (character.health > 100) {
-
-            character.health = 100;
-        }
+        character.restoreHealth(20);
     }
 
     @Override
