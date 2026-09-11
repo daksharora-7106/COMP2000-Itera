@@ -125,15 +125,11 @@ public class Test extends JPanel {
             );
 
         buildings.add(hospital);
-
         buildings.add(policeStation);
-
         buildings.add(convenienceStore);
 
         world.addBuilding(hospital);
-
         world.addBuilding(policeStation);
-
         world.addBuilding(convenienceStore);
 
         /*
@@ -191,15 +187,10 @@ public class Test extends JPanel {
             );
 
         resources.add(medicine1);
-
         resources.add(medicine2);
-
         resources.add(weapon1);
-
         resources.add(weapon2);
-
         resources.add(food1);
-
         resources.add(food2);
 
         for (Resource resource : resources) {
@@ -328,9 +319,7 @@ public class Test extends JPanel {
     private Vector2D randomHumanPosition() {
 
         int x;
-
         int y;
-
         boolean invalid;
 
         do {
@@ -401,8 +390,9 @@ public class Test extends JPanel {
          *
          * 5, 10, 15, 20...
          *
-         * If the boss survives Wave 5,
-         * it is removed when Wave 6 begins.
+         * If a boss survives a boss wave,
+         * remove it when the next normal
+         * wave begins.
          */
         if (waveNumber % 5 != 0) {
 
@@ -694,13 +684,6 @@ public class Test extends JPanel {
          *
          * If no humans remain,
          * update the screen first.
-         *
-         * This makes sure the screen
-         * displays:
-         *
-         * Humans: 0
-         *
-         * before the restart popup appears.
          */
         if (world.getHumans().isEmpty()) {
 
@@ -1016,6 +999,53 @@ public class Test extends JPanel {
             currentX,
             textY
         );
+
+        /*
+         * BOSS WAVE WARNING
+         *
+         * Display a large warning
+         * during waves:
+         *
+         * 5, 10, 15, 20...
+         */
+        if (waveNumber % 5 == 0) {
+
+            g.setColor(
+                new Color(
+                    120,
+                    0,
+                    120
+                )
+            );
+
+            g.setFont(
+                new Font(
+                    "Arial",
+                    Font.BOLD,
+                    26
+                )
+            );
+
+            String bossText =
+                "BOSS WAVE";
+
+            FontMetrics bossFm =
+                g.getFontMetrics();
+
+            int bossX =
+                (
+                    getWidth()
+                        - bossFm.stringWidth(
+                            bossText
+                        )
+                ) / 2;
+
+            g.drawString(
+                bossText,
+                bossX,
+                65
+            );
+        }
     }
 
     /*
