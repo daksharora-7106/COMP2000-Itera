@@ -1,9 +1,10 @@
-package itera.model;
+package itera.model.zombie;
 
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.Graphics;
-import java.util.ArrayList;
+import itera.model.*;
+import itera.model.Character;
+import itera.model.human.*;
+import java.awt.*;
+import java.util.*;
 
 public class Zombie extends Character {
 
@@ -172,7 +173,7 @@ public class Zombie extends Character {
     @Override
     public void draw(Graphics g) {
 
-        g.setColor(Color.RED);
+        g.setColor(new Color(211, 47, 47));
 
         g.fillOval(getX(), getY(), size, size);
 

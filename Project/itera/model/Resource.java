@@ -1,6 +1,6 @@
 package itera.model;
 
-import java.awt.Graphics;
+import java.awt.*;
 
 public abstract class Resource {
 

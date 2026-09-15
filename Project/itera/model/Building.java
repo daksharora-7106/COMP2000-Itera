@@ -1,9 +1,8 @@
 package itera.model;
 
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.Graphics;
-import java.util.ArrayList;
+import itera.model.human.*;
+import java.awt.*;
+import java.util.*;
 
 public abstract class Building {
 

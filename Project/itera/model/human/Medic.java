@@ -1,8 +1,10 @@
-package itera.model;
+package itera.model.human;
 
-import java.awt.Color;
-import java.awt.Graphics;
-import java.util.ArrayList;
+import itera.model.*;
+import itera.model.Character;
+import itera.model.zombie.*;
+import java.awt.*;
+import java.util.*;
 
 public class Medic extends Human {
     private long lastHealTime;

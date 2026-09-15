@@ -1,11 +1,7 @@
 package itera.model;
 
-import java.awt.BasicStroke;
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.util.Random;
+import java.awt.*;
+import java.util.*;
 
 public class SafePoint {
 

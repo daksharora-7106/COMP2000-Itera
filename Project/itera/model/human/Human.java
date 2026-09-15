@@ -1,10 +1,10 @@
-package itera.model;
+package itera.model.human;
 
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.Graphics;
-import java.util.ArrayList;
-import java.util.Random;
+import itera.model.*;
+import itera.model.Character;
+import itera.model.zombie.*;
+import java.awt.*;
+import java.util.*;
 
 public class Human extends Character {
 
@@ -344,6 +344,10 @@ public class Human extends Character {
         return stamina;
     }
 
+    public void restoreStamina(int amount) {
+        stamina = Math.min(MAX_STAMINA, stamina + amount);
+    }
+
     protected void moveTowardsSafePoint(SafePoint safePoint) {
 
         double directionX = safePoint.getDoorX() - position.getX();
@@ -457,7 +461,7 @@ public class Human extends Character {
     @Override
     public void draw(Graphics g) {
 
-        g.setColor(Color.BLUE);
+        g.setColor(new Color(0, 137, 123));
 
         g.fillOval(getX(), getY(), size, size);
 
