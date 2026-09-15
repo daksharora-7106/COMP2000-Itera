@@ -1,7 +1,7 @@
 package itera.model;
 
-import java.awt.Color;
-import java.awt.Graphics;
+import itera.model.human.*;
+import java.awt.*;
 
 public class Food extends Resource {
 
@@ -37,12 +37,7 @@ public class Food extends Resource {
 
             human.health = Math.min(100, human.health + nutrition);
 
-            human.stamina += nutrition;
-
-            if (human.stamina > 100) {
-
-                human.stamina = 100;
-            }
+            human.restoreStamina(nutrition);
 
             quantity--;
         }

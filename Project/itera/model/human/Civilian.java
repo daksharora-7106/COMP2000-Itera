@@ -1,6 +1,6 @@
-package itera.model;
+package itera.model.human;
 
-import java.awt.Graphics;
+import java.awt.*;
 
 public class Civilian extends Human {
     private int fearLevel = 0;

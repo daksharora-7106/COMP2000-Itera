@@ -1,8 +1,9 @@
-package itera.model;
+package itera.model.zombie;
 
-import java.awt.Color;
-import java.awt.Graphics;
-import java.util.ArrayList;
+import itera.model.*;
+import itera.model.human.*;
+import java.awt.*;
+import java.util.*;
 
 public class Runner extends Zombie {
     private static final double SPRINT_SPEED = 2.5;
@@ -50,7 +51,7 @@ public class Runner extends Zombie {
 
     @Override
     public void draw(Graphics g) {
-        g.setColor(Color.ORANGE);
+        g.setColor(new Color(245, 124, 0));
         g.fillOval(getX(), getY(), size, size);
         drawTypeLabel(g, "R");
     }

@@ -1,7 +1,9 @@
-package itera.model;
+package itera.model.zombie;
 
-import java.awt.Color;
-import java.awt.Graphics;
+import itera.model.*;
+import itera.model.Character;
+import itera.model.human.*;
+import java.awt.*;
 
 public class Stalker extends Zombie {
     private int stealth = 100;
@@ -35,7 +37,7 @@ public class Stalker extends Zombie {
 
     @Override
     public void draw(Graphics g) {
-        g.setColor(Color.MAGENTA);
+        g.setColor(new Color(123, 31, 162));
         g.fillOval(getX(), getY(), size, size);
         drawTypeLabel(g, "S");
     }

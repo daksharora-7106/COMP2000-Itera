@@ -1,7 +1,7 @@
 package itera.model;
 
-import java.awt.Color;
-import java.awt.Graphics;
+import itera.model.human.*;
+import java.awt.*;
 
 public class Medicine extends Resource {
 

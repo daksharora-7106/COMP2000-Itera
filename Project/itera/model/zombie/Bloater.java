@@ -1,8 +1,9 @@
-package itera.model;
+package itera.model.zombie;
 
-import java.awt.Color;
-import java.awt.Graphics;
-import java.util.ArrayList;
+import itera.model.*;
+import itera.model.human.*;
+import java.awt.*;
+import java.util.*;
 
 public class Bloater extends Zombie {
     private double blastRadius = 60;
@@ -83,7 +84,7 @@ public class Bloater extends Zombie {
 
     @Override
     public void draw(Graphics g) {
-        g.setColor(Color.DARK_GRAY);
+        g.setColor(new Color(84, 110, 122));
         g.fillOval(getX(), getY(), size, size);
         drawTypeLabel(g, "B");
     }

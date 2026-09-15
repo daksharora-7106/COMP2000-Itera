@@ -1,8 +1,8 @@
-package itera.model;
+package itera.model.zombie;
 
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.Graphics;
+import itera.model.*;
+import itera.model.human.*;
+import java.awt.*;
 
 public class MutantBoss extends Zombie {
 
@@ -48,7 +48,7 @@ public class MutantBoss extends Zombie {
     public void draw(Graphics g) {
 
         // Draw the boss as a large dark-purple circle
-        g.setColor(new Color(100, 0, 100));
+        g.setColor(new Color(74, 20, 140));
         g.fillOval(getX(), getY(), size, size);
 
         drawHealthBar(g);

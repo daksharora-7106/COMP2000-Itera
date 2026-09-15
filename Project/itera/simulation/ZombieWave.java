@@ -1,13 +1,8 @@
 package itera.simulation;
 
-import itera.model.Bloater;
-import itera.model.MutantBoss;
-import itera.model.Runner;
-import itera.model.Stalker;
-import itera.model.Vector2D;
-import itera.model.Zombie;
-import java.util.ArrayList;
-import java.util.Random;
+import itera.model.*;
+import itera.model.zombie.*;
+import java.util.*;
 
 public class ZombieWave {
 

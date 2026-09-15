@@ -1,23 +1,8 @@
 package itera.ui;
 
-import itera.simulation.SimulationSettings;
-import java.awt.BorderLayout;
-import java.awt.CardLayout;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Frame;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JDialog;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JSpinner;
-import javax.swing.JTextArea;
-import javax.swing.SpinnerNumberModel;
+import itera.simulation.*;
+import java.awt.*;
+import javax.swing.*;
 
 /** Two-step introduction and setup screen shown before a simulation is created. */
 @SuppressWarnings("serial")
@@ -40,7 +25,7 @@ public final class SimulationSettingsDialog extends JDialog {
         cardPanel.add(createSettingsPanel(), "settings");
         add(cardPanel);
         pack();
-        setMinimumSize(new Dimension(520, 360));
+        setMinimumSize(new Dimension(520, 380));
         setLocationRelativeTo(owner);
     }
 
@@ -57,12 +42,12 @@ public final class SimulationSettingsDialog extends JDialog {
             BorderLayout.NORTH);
 
         JTextArea explanation = new JTextArea(
-            "Your goal is to keep humans alive for as long as possible.\n\n"
-                + "• Civilians, soldiers and medics roam the world. Soldiers can collect "
+            "The simulation goal is to keep humans alive for as long as possible.\n\n"
+                + "Civilians, soldiers and medics roam the world. Soldiers can collect "
                 + "weapons; medics can collect medicine; everyone can use food.\n"
-                + "• Injured humans can shelter and recover at the safe point. Zombies cannot enter it.\n"
-                + "• Zombies hunt unprotected humans. A killed human becomes a new zombie.\n"
-                + "• A stronger zombie wave arrives every 15 seconds; every fifth wave is a boss wave.\n\n"
+                + "Injured humans can shelter and recover at the safe point. Zombies cannot enter it.\n"
+                + "Zombies hunt unprotected humans. A killed human becomes a new zombie.\n"
+                + "A stronger zombie wave arrives every 15 seconds; every fifth wave is a boss wave.\n\n"
                 + "Next, choose the populations that begin this simulation.");
         explanation.setEditable(false);
         explanation.setOpaque(false);

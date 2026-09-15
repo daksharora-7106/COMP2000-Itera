@@ -1,36 +1,13 @@
 package itera.ui;
 
-import itera.model.Bloater;
-import itera.model.Building;
+import itera.model.*;
 import itera.model.Character;
-import itera.model.Civilian;
-import itera.model.ConvenienceStore;
-import itera.model.Hospital;
-import itera.model.Human;
-import itera.model.Medic;
-import itera.model.PoliceStation;
-import itera.model.Resource;
-import itera.model.Runner;
-import itera.model.SafePoint;
-import itera.model.Soldier;
-import itera.model.Stalker;
-import itera.model.Vector2D;
-import itera.model.Zombie;
-import itera.simulation.World;
-import itera.simulation.ZombieWave;
-import itera.simulation.SimulationSettings;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.Graphics;
-import java.util.ArrayList;
-import java.util.Random;
-import javax.swing.JFrame;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
+import itera.model.human.*;
+import itera.model.zombie.*;
+import itera.simulation.*;
+import java.awt.*;
+import java.util.*;
+import javax.swing.*;
 import javax.swing.Timer;
 
 @SuppressWarnings({"serial", "this-escape"})
@@ -47,6 +24,7 @@ public class Main extends JPanel {
     private final World world;
     private final SafePoint safePoint;
     private final FastForward fastForward;
+    private final JButton pauseButton;
     private final SimulationSettings settings;
 
     private final ArrayList<Building> buildings =
@@ -56,6 +34,7 @@ public class Main extends JPanel {
         new ArrayList<>();
 
     private Timer timer;
+    private boolean paused;
 
     /*
      * Zombie wave settings.
@@ -175,6 +154,12 @@ public class Main extends JPanel {
          * Fast-forward control.
          */
         fastForward = new FastForward();
+        pauseButton = new JButton("Pause");
+        pauseButton.addActionListener(event -> {
+            paused = !paused;
+            pauseButton.setText(paused ? "Resume" : "Pause");
+            repaint();
+        });
 
         /*
          * Main simulation timer.
@@ -183,6 +168,10 @@ public class Main extends JPanel {
             new Timer(
                 30,
                 e -> {
+
+                    if (paused) {
+                        return;
+                    }
 
                     try {
                         timer.setDelay(
@@ -710,6 +699,35 @@ public class Main extends JPanel {
         return fastForward;
     }
 
+    /** Returns the controls shown below the simulation. */
+    public JPanel getSimulationControls() {
+        JPanel controls = new JPanel(new BorderLayout());
+        JPanel legend = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 3));
+        legend.add(new JLabel("Legend:"));
+        addLegendItem(legend, "C Civilian", new Color(0, 137, 123));
+        addLegendItem(legend, "S Soldier", new Color(0, 137, 123));
+        addLegendItem(legend, "M Medic", new Color(0, 137, 123));
+        addLegendItem(legend, "Z Standard zombie", new Color(211, 47, 47));
+        addLegendItem(legend, "R Runner", new Color(245, 124, 0));
+        addLegendItem(legend, "S Stalker", new Color(123, 31, 162));
+        addLegendItem(legend, "B Bloater", new Color(84, 110, 122));
+        addLegendItem(legend, "BOSS Mutant boss", new Color(74, 20, 140));
+        addLegendItem(legend, "Safe Zone", new Color(0, 110, 0));
+
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        buttons.add(fastForward);
+        buttons.add(pauseButton);
+        controls.add(legend, BorderLayout.NORTH);
+        controls.add(buttons, BorderLayout.SOUTH);
+        return controls;
+    }
+
+    private void addLegendItem(JPanel legend, String text, Color color) {
+        JLabel item = new JLabel(text);
+        item.setForeground(color);
+        legend.add(item);
+    }
+
     /*
      * Calculates how many seconds
      * remain until the next wave.
@@ -928,6 +946,16 @@ public class Main extends JPanel {
             textY
         );
 
+        if (paused) {
+            g.setColor(new Color(0, 0, 0, 150));
+            g.fillRect(0, 0, getWidth(), getHeight());
+            g.setColor(Color.WHITE);
+            g.setFont(new Font("Arial", Font.BOLD, 30));
+            String pausedText = "PAUSED";
+            int pausedX = (getWidth() - g.getFontMetrics().stringWidth(pausedText)) / 2;
+            g.drawString(pausedText, pausedX, getHeight() / 2);
+        }
+
         /*
          * BOSS WAVE WARNING
          *
@@ -1011,7 +1039,7 @@ public class Main extends JPanel {
          * at bottom.
          */
         frame.add(
-            simulation.getFastForward(),
+            simulation.getSimulationControls(),
             BorderLayout.SOUTH
         );
 
