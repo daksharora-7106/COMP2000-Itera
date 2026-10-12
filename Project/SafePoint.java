@@ -14,7 +14,7 @@ public class SafePoint {
     public SafePoint(int x, int y, int width, int height, int capacity) {
 
         this.x = x;
-        this.y = y;
+        this.y = y; 
 
         this.width = width;
         this.height = height;
