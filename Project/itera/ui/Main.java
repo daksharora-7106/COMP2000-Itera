@@ -35,6 +35,16 @@ public class Main extends JPanel {
 
     private Timer timer;
     private boolean paused;
+    private final JLabel populationSummary = new JLabel(" ", SwingConstants.CENTER);
+
+    private void refreshPopulationSummary() {
+        String summary = world.populationSnapshot().getRoles().entrySet().stream()
+            .map(entry -> String.format(Locale.ROOT, "%s: %d alive, %d wounded, %.0f%% health",
+                entry.getKey(), entry.getValue().count(), entry.getValue().wounded(),
+                entry.getValue().averageHealth()))
+            .collect(java.util.stream.Collectors.joining("   |   "));
+        populationSummary.setText(summary.isEmpty() ? "No humans remaining" : summary);
+    }
 
     /*
      * Zombie wave settings.
@@ -141,12 +151,7 @@ public class Main extends JPanel {
                 + (i % zombieColumns) * 70;
             int y = WORLD_HEIGHT / 2 - (zombieRows - 1) * 35
                 + (i / zombieColumns) * 70;
-            Zombie zombie = switch (i % 4) {
-                case 1 -> new Runner(x, y);
-                case 2 -> new Stalker(x, y);
-                case 3 -> new Bloater(x, y);
-                default -> new Zombie(x, y);
-            };
+            Zombie zombie = ZombieSpawns.atType(i % 4, x, y);
             world.addCharacter(zombie);
         }
 
@@ -538,43 +543,7 @@ public class Main extends JPanel {
                 : convertedHumans
         ) {
 
-            int zombieType =
-                random.nextInt(4);
-
-            Zombie newZombie;
-
-            if (zombieType == 0) {
-
-                newZombie =
-                    new Zombie(
-                        human.getX(),
-                        human.getY()
-                    );
-
-            } else if (zombieType == 1) {
-
-                newZombie =
-                    new Runner(
-                        human.getX(),
-                        human.getY()
-                    );
-
-            } else if (zombieType == 2) {
-
-                newZombie =
-                    new Stalker(
-                        human.getX(),
-                        human.getY()
-                    );
-
-            } else {
-
-                newZombie =
-                    new Bloater(
-                        human.getX(),
-                        human.getY()
-                    );
-            }
+            Zombie newZombie = ZombieSpawns.random(random, human.getX(), human.getY());
 
             world.addCharacter(
                 newZombie
@@ -585,6 +554,7 @@ public class Main extends JPanel {
          * Remove dead characters.
          */
         world.update();
+        refreshPopulationSummary();
 
         /*
          * SIMULATION END CONDITION
@@ -717,7 +687,20 @@ public class Main extends JPanel {
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.CENTER));
         buttons.add(fastForward);
         buttons.add(pauseButton);
+        JComboBox<String> treatment = new JComboBox<>(new String[] {
+            "Soldiers first", "Most injured first"
+        });
+        treatment.setToolTipText("Choose who medics help first; critical self-healing still takes priority.");
+        treatment.addActionListener(event -> {
+            world.setTreatmentStrategy(treatment.getSelectedIndex() == 0
+                ? new itera.model.human.treatment.SoldiersFirstStrategy()
+                : new itera.model.human.treatment.MostInjuredStrategy());
+        });
+        buttons.add(new JLabel("Medic priority:"));
+        buttons.add(treatment);
+        refreshPopulationSummary();
         controls.add(legend, BorderLayout.NORTH);
+        controls.add(populationSummary, BorderLayout.CENTER);
         controls.add(buttons, BorderLayout.SOUTH);
         return controls;
     }

@@ -6,8 +6,19 @@ import itera.model.human.*;
 import itera.model.zombie.*;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.function.Predicate;
 
 public class World {
+    private itera.model.human.treatment.TreatmentStrategy treatmentStrategy =
+        new itera.model.human.treatment.SoldiersFirstStrategy();
+
+    /** Apply policy to current medics and retain it for future reinforcements. */
+    public void setTreatmentStrategy(itera.model.human.treatment.TreatmentStrategy strategy) {
+        treatmentStrategy = Objects.requireNonNull(strategy, "Treatment strategy is required");
+        getHumans().stream().filter(Medic.class::isInstance).map(Medic.class::cast)
+            .forEach(medic -> medic.setTreatmentStrategy(strategy));
+    }
+
 
     // All in-world timers advance with movement, independent of wall-clock time.
     private long simulationTime = System.currentTimeMillis();
@@ -33,6 +44,7 @@ public class World {
     public void addCharacter(Character character) {
 
         character.setTimeSource(this::getTime);
+        if (character instanceof Medic medic) medic.setTreatmentStrategy(treatmentStrategy);
         characters.add(character);
     }
 
@@ -67,6 +79,10 @@ public class World {
         wave.trigger(this);
     }
 
+    public PopulationSnapshot populationSnapshot() {
+        return new PopulationSnapshot(findCharacters(Human.class, Human::isAlive));
+    }
+
     public boolean isCleared() {
 
         return characters.stream()
@@ -78,19 +94,23 @@ public class World {
         return characters;
     }
 
-    public ArrayList<Human> getHumans() {
-
+    /** Return a fresh list selected by type and caller-supplied behaviour. */
+    public <T extends Character> ArrayList<T> findCharacters(
+            Class<T> type, Predicate<? super T> condition) {
+        Objects.requireNonNull(type, "Character type is required");
+        Objects.requireNonNull(condition, "Filter is required");
         return characters.stream()
-            .filter(Human.class::isInstance)
-            .map(Human.class::cast)
+            .filter(type::isInstance)
+            .map(type::cast)
+            .filter(condition)
             .collect(Collectors.toCollection(ArrayList::new));
     }
 
-    public ArrayList<Zombie> getZombies() {
+    public ArrayList<Human> getHumans() {
+        return findCharacters(Human.class, human -> true);
+    }
 
-        return characters.stream()
-            .filter(Zombie.class::isInstance)
-            .map(Zombie.class::cast)
-            .collect(Collectors.toCollection(ArrayList::new));
+    public ArrayList<Zombie> getZombies() {
+        return findCharacters(Zombie.class, zombie -> true);
     }
 }
