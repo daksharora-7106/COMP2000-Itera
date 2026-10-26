@@ -5,19 +5,27 @@ import java.util.*;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-/** Immutable values collected on the simulation thread, with no live entity references. */
+/**
+ * Immutable values collected on the calling thread, with no live entity references.
+ * Capture must not overlap a world update: World stores characters in a mutable
+ * ArrayList, so concurrent additions/removals can cause inconsistent results or
+ * ConcurrentModificationException; health reads can also observe mixed tick state.
+ * The parallel reduction below only sees captured values.
+ */
 public final class PopulationSnapshot {
     public record RoleSummary(long count, long wounded, double averageHealth) { }
+
+    private record HumanStats(String role, int health) { }
 
     private static final class RoleAccumulator {
         private long count;
         private long wounded;
         private long totalHealth;
 
-        private void add(Human human) {
+        private void add(HumanStats human) {
             count++;
-            if (human.getHealth() < 100) wounded++;
-            totalHealth += human.getHealth();
+            if (human.health() < 100) wounded++;
+            totalHealth += human.health();
         }
 
         private RoleAccumulator combine(RoleAccumulator other) {
@@ -35,9 +43,13 @@ public final class PopulationSnapshot {
     private final Map<String, RoleSummary> roles;
 
     public PopulationSnapshot(List<Human> humans) {
-        Map<String, RoleSummary> collected = humans.stream()
+        List<HumanStats> captured = humans.stream()
             .filter(Human::isAlive)
-            .collect(Collectors.groupingBy(human -> human.getClass().getSimpleName(),
+            .map(human -> new HumanStats(human.getClass().getSimpleName(), human.getHealth()))
+            .toList();
+
+        Map<String, RoleSummary> collected = captured.parallelStream()
+            .collect(Collectors.groupingBy(HumanStats::role,
                 TreeMap::new,
                 Collector.of(RoleAccumulator::new, RoleAccumulator::add,
                     RoleAccumulator::combine, RoleAccumulator::toSummary)));

@@ -96,6 +96,16 @@ public final class Week811Checks {
         rejects(UnsupportedOperationException.class, () -> snapshot.getRoles().clear());
         check(new World().populationSnapshot().getRoles().isEmpty(), "Empty snapshot");
 
+        List<Human> largePopulation = new ArrayList<>();
+        for (int i = 0; i < 1000; i++) {
+            largePopulation.add(new Civilian(0, 0));
+        }
+        PopulationSnapshot largeSnapshot = new PopulationSnapshot(largePopulation);
+        check(largeSnapshot.getRoles().get("Civilian").count() == 1000,
+            "Parallel reduction combines all population entries");
+        check(largeSnapshot.getRoles().get("Civilian").averageHealth() == 100,
+            "Parallel reduction preserves average health");
+
         World waves = new World();
         Zombie survivor = new Zombie(2, 2);
         waves.addCharacter(survivor);

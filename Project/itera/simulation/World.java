@@ -79,6 +79,10 @@ public class World {
         wave.trigger(this);
     }
 
+    /**
+     * Capture statistics on the simulation thread. This must not run concurrently
+     * with a tick or other world mutation because the world and entities are mutable.
+     */
     public PopulationSnapshot populationSnapshot() {
         return new PopulationSnapshot(findCharacters(Human.class, Human::isAlive));
     }
