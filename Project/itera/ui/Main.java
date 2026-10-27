@@ -1,3 +1,4 @@
+
 package itera.ui;
 
 import itera.model.*;
@@ -835,6 +836,10 @@ public class Main extends JPanel {
             "Zombies: "
                 + zombieCount;
 
+        String killsText =
+            "Eliminated: "
+                + world.getTotalZombieEliminations();
+
         String waveText =
             "Wave: "
                 + waveNumber;
@@ -857,12 +862,15 @@ public class Main extends JPanel {
                     zombieText
                 )
                 + fm.stringWidth(
+                    killsText
+                )
+                + fm.stringWidth(
                     waveText
                 )
                 + fm.stringWidth(
                     nextWaveText
                 )
-                + gap * 3;
+                + gap * 4;
 
         /*
          * Centre status text.
@@ -904,6 +912,20 @@ public class Main extends JPanel {
         currentX +=
             fm.stringWidth(
                 zombieText
+            ) + gap;
+
+        /*
+         * Cumulative zombie eliminations
+         */
+        g.drawString(
+            killsText,
+            currentX,
+            textY
+        );
+
+        currentX +=
+            fm.stringWidth(
+                killsText
             ) + gap;
 
         /*
