@@ -10,115 +10,195 @@ import java.util.stream.Collectors;
 import java.util.function.Predicate;
 
 public class World {
+
     private itera.model.human.treatment.TreatmentStrategy treatmentStrategy =
         new itera.model.human.treatment.SoldiersFirstStrategy();
 
-    /** Apply policy to current medics and retain it for future reinforcements. */
-    public void setTreatmentStrategy(itera.model.human.treatment.TreatmentStrategy strategy) {
-        treatmentStrategy = Objects.requireNonNull(strategy, "Treatment strategy is required");
-        getHumans().stream().filter(Medic.class::isInstance).map(Medic.class::cast)
+    /** Apply policy to current medics and future reinforcements. */
+    public void setTreatmentStrategy(
+            itera.model.human.treatment.TreatmentStrategy strategy) {
+
+        treatmentStrategy = Objects.requireNonNull(
+            strategy,
+            "Treatment strategy is required"
+        );
+
+        getHumans().stream()
+            .filter(Medic.class::isInstance)
+            .map(Medic.class::cast)
             .forEach(medic -> medic.setTreatmentStrategy(strategy));
     }
 
-
-    // All in-world timers advance with movement, independent of wall-clock time.
+    // All timers advance with simulation time.
     private long simulationTime = System.currentTimeMillis();
 
-    public long getTime() { return simulationTime; }
+    public long getTime() {
+        return simulationTime;
+    }
 
     public void advanceTime(long milliseconds) {
-        if (milliseconds < 0) throw new IllegalArgumentException("Time cannot go backwards");
+        if (milliseconds < 0) {
+            throw new IllegalArgumentException(
+                "Time cannot go backwards"
+            );
+        }
+
         simulationTime += milliseconds;
     }
 
-
-    // Track zombie eliminations across the entire simulation.
+    // Track zombie eliminations.
     private long totalZombieEliminations;
 
-    /** Returns the cumulative number of eliminated zombies. */
     public long getTotalZombieEliminations() {
         return totalZombieEliminations;
     }
 
-
     private ArrayList<Character> characters = new ArrayList<>();
-
     private ArrayList<Resource> resources = new ArrayList<>();
-
     private ArrayList<Building> buildings = new ArrayList<>();
-
     private ArrayList<SafePoint> safePoints = new ArrayList<>();
-
     private ArrayList<ZombieWave> waves = new ArrayList<>();
 
     public void addCharacter(Character character) {
-
         character.setTimeSource(this::getTime);
-        if (character instanceof Medic medic) medic.setTreatmentStrategy(treatmentStrategy);
+
+        if (character instanceof Medic medic) {
+            medic.setTreatmentStrategy(treatmentStrategy);
+        }
+
         characters.add(character);
     }
 
     public void addResource(Resource resource) {
-
         resource.setTimeSource(this::getTime);
         resources.add(resource);
     }
 
     public void addBuilding(Building building) {
-
         buildings.add(building);
     }
 
     public void addSafePoint(SafePoint safePoint) {
-
         safePoints.add(safePoint);
     }
 
     public void addWave(ZombieWave wave) {
-
         waves.add(wave);
+    }
+
+    /**
+     * NEW: Update Mutant Boss special abilities.
+     *
+     * Ground Smash:
+     * The boss warns nearby humans before dealing area damage.
+     *
+     * Zombie Summoning:
+     * At 50% health, the boss summons three zombies once.
+     */
+    public void updateBossAbilities() {
+
+        ArrayList<Human> humans = getHumans();
+
+        // Use a snapshot so spawning new zombies is safe.
+        ArrayList<Zombie> zombies = getZombies();
+
+        for (Zombie zombie : zombies) {
+
+            if (!(zombie instanceof MutantBoss boss)) {
+                continue;
+            }
+
+            if (!boss.isAlive()) {
+                continue;
+            }
+
+            // Update Ground Smash and summoning state.
+            boss.updateSpecialAbilities(
+                humans,
+                getTime()
+            );
+
+            // Spawn reinforcements once at 50% boss health.
+            if (boss.consumeSummonRequest()) {
+
+                for (int i = 0; i < 3; i++) {
+
+                    double angle =
+                        i * 2 * Math.PI / 3;
+
+                    int spawnX = boss.getX()
+                        + (int) (65 * Math.cos(angle));
+
+                    int spawnY = boss.getY()
+                        + (int) (65 * Math.sin(angle));
+
+                    Zombie reinforcement = new Zombie(
+                        spawnX,
+                        spawnY
+                    );
+
+                    addCharacter(reinforcement);
+                }
+            }
+        }
     }
 
     public void update() {
 
-        // Count defeated zombies before removing dead characters.
+        // Count defeated zombies before removing them.
         totalZombieEliminations += characters.stream()
-            .filter(character -> character instanceof Zombie && !character.isAlive())
+            .filter(character ->
+                character instanceof Zombie
+                && !character.isAlive()
+            )
             .count();
 
-        // Removed zombies cannot be counted again on later updates.
+        // Remove dead characters.
         characters.removeIf(character -> !character.isAlive());
     }
 
     public void spawnWave(ZombieWave wave) {
-
         wave.trigger(this);
     }
 
     /**
-     * Capture statistics on the simulation thread. This must not run concurrently
-     * with a tick or other world mutation because the world and entities are mutable.
+     * Capture current population statistics.
      */
     public PopulationSnapshot populationSnapshot() {
-        return new PopulationSnapshot(findCharacters(Human.class, Human::isAlive));
+        return new PopulationSnapshot(
+            findCharacters(Human.class, Human::isAlive)
+        );
     }
 
     public boolean isCleared() {
-
         return characters.stream()
-            .noneMatch(character -> character instanceof Zombie && character.isAlive());
+            .noneMatch(character ->
+                character instanceof Zombie
+                && character.isAlive()
+            );
     }
 
     public ArrayList<Character> getCharacters() {
-
         return characters;
     }
 
-    /** Return a fresh list selected by type and caller-supplied behaviour. */
+    /**
+     * Return characters matching the requested type and condition.
+     */
     public <T extends Character> ArrayList<T> findCharacters(
-            Class<T> type, Predicate<? super T> condition) {
-        Objects.requireNonNull(type, "Character type is required");
-        Objects.requireNonNull(condition, "Filter is required");
+            Class<T> type,
+            Predicate<? super T> condition) {
+
+        Objects.requireNonNull(
+            type,
+            "Character type is required"
+        );
+
+        Objects.requireNonNull(
+            condition,
+            "Filter is required"
+        );
+
         return characters.stream()
             .filter(type::isInstance)
             .map(type::cast)
@@ -127,10 +207,16 @@ public class World {
     }
 
     public ArrayList<Human> getHumans() {
-        return findCharacters(Human.class, human -> true);
+        return findCharacters(
+            Human.class,
+            human -> true
+        );
     }
 
     public ArrayList<Zombie> getZombies() {
-        return findCharacters(Zombie.class, zombie -> true);
+        return findCharacters(
+            Zombie.class,
+            zombie -> true
+        );
     }
 }
