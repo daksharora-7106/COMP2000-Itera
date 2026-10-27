@@ -20,6 +20,10 @@ public class Main extends JPanel {
     private static final int BUILDING_SIZE = 180;
     private static final int BOTTOM_BUILDING_OFFSET = 70;
 
+    private static final long WAVE_INTERVAL = 15000;
+    private static final int BASE_ZOMBIES_PER_WAVE = 9;
+    private static final int ZOMBIES_ADDED_PER_WAVE = 3;
+
     private final Random random = new Random();
 
     private final World world;
@@ -36,29 +40,37 @@ public class Main extends JPanel {
 
     private Timer timer;
     private boolean paused;
-    private final JLabel populationSummary = new JLabel(" ", SwingConstants.CENTER);
-
-    private void refreshPopulationSummary() {
-        String summary = world.populationSnapshot().getRoles().entrySet().stream()
-            .map(entry -> String.format(Locale.ROOT, "%s: %d alive, %d wounded, %.0f%% health",
-                entry.getKey(), entry.getValue().count(), entry.getValue().wounded(),
-                entry.getValue().averageHealth()))
-            .collect(java.util.stream.Collectors.joining("   |   "));
-        populationSummary.setText(summary.isEmpty() ? "No humans remaining" : summary);
-    }
-
-    /*
-     * Zombie wave settings.
-     */
-    private static final long WAVE_INTERVAL = 15000;
-
-    private static final int BASE_ZOMBIES_PER_WAVE = 9;
-
-    private static final int ZOMBIES_ADDED_PER_WAVE = 3;
 
     private long lastWaveTime;
-
     private int waveNumber = 1;
+
+    private final JLabel populationSummary =
+        new JLabel(" ", SwingConstants.CENTER);
+
+    private void refreshPopulationSummary() {
+
+        String summary = world.populationSnapshot()
+            .getRoles()
+            .entrySet()
+            .stream()
+            .map(entry -> String.format(
+                Locale.ROOT,
+                "%s: %d alive, %d wounded, %.0f%% health",
+                entry.getKey(),
+                entry.getValue().count(),
+                entry.getValue().wounded(),
+                entry.getValue().averageHealth()
+            ))
+            .collect(
+                java.util.stream.Collectors.joining("   |   ")
+            );
+
+        populationSummary.setText(
+            summary.isEmpty()
+                ? "No humans remaining"
+                : summary
+        );
+    }
 
     public Main() {
         this(createDefaultSettings());
@@ -69,17 +81,12 @@ public class Main extends JPanel {
         this.settings = settings;
 
         setPreferredSize(
-            new Dimension(
-                WORLD_WIDTH,
-                WORLD_HEIGHT
-            )
+            new Dimension(WORLD_WIDTH, WORLD_HEIGHT)
         );
 
         world = new World();
 
-        /*
-         * SAFE POINT
-         */
+        // SAFE POINT
         safePoint = new SafePoint(
             0,
             0,
@@ -90,23 +97,18 @@ public class Main extends JPanel {
 
         world.addSafePoint(safePoint);
 
-        /*
-         * BUILDINGS
-         */
+        // BUILDINGS
+        Hospital hospital = new Hospital(
+            WORLD_WIDTH - BUILDING_SIZE,
+            0
+        );
 
-        Hospital hospital =
-            new Hospital(
-                WORLD_WIDTH - BUILDING_SIZE,
-                0
-            );
-
-        PoliceStation policeStation =
-            new PoliceStation(
-                0,
-                WORLD_HEIGHT
-                    - BUILDING_SIZE
-                    - BOTTOM_BUILDING_OFFSET
-            );
+        PoliceStation policeStation = new PoliceStation(
+            0,
+            WORLD_HEIGHT
+                - BUILDING_SIZE
+                - BOTTOM_BUILDING_OFFSET
+        );
 
         ConvenienceStore convenienceStore =
             new ConvenienceStore(
@@ -124,115 +126,168 @@ public class Main extends JPanel {
         world.addBuilding(policeStation);
         world.addBuilding(convenienceStore);
 
-        /*
-         * RESOURCES
-         */
-
+        // RESOURCES
         for (Building building : buildings) {
             resources.addAll(building.getResources());
         }
-        for (Resource resource : resources) world.addResource(resource);
 
+        for (Resource resource : resources) {
+            world.addResource(resource);
+        }
+
+        // STARTING HUMANS
         addStartingHumans();
 
-        /*
-         * INITIAL ZOMBIES
-         */
-
-        // Zombies spread across the centre. Bosses still begin on boss waves.
+        // INITIAL ZOMBIES
         int zombieColumns = Math.min(
             10,
-            Math.max(5, (int) Math.ceil(Math.sqrt(settings.getStartingZombies())))
+            Math.max(
+                5,
+                (int) Math.ceil(
+                    Math.sqrt(settings.getStartingZombies())
+                )
+            )
         );
+
         int zombieRows = (int) Math.ceil(
-            settings.getStartingZombies() / (double) zombieColumns
+            settings.getStartingZombies()
+                / (double) zombieColumns
         );
-        for (int i = 0; i < settings.getStartingZombies(); i++) {
-            int x = WORLD_WIDTH / 2 - (zombieColumns - 1) * 35
+
+        for (
+            int i = 0;
+            i < settings.getStartingZombies();
+            i++
+        ) {
+
+            int x = WORLD_WIDTH / 2
+                - (zombieColumns - 1) * 35
                 + (i % zombieColumns) * 70;
-            int y = WORLD_HEIGHT / 2 - (zombieRows - 1) * 35
+
+            int y = WORLD_HEIGHT / 2
+                - (zombieRows - 1) * 35
                 + (i / zombieColumns) * 70;
-            Zombie zombie = ZombieSpawns.atType(i % 4, x, y);
+
+            Zombie zombie = ZombieSpawns.atType(
+                i % 4,
+                x,
+                y
+            );
+
             world.addCharacter(zombie);
         }
 
-        /*
-         * Fast-forward control.
-         */
+        // FAST FORWARD
         fastForward = new FastForward();
+
+        // PAUSE BUTTON
         pauseButton = new JButton("Pause");
+
         pauseButton.addActionListener(event -> {
             paused = !paused;
-            pauseButton.setText(paused ? "Resume" : "Pause");
+
+            pauseButton.setText(
+                paused ? "Resume" : "Pause"
+            );
+
             repaint();
         });
 
-        /*
-         * Main simulation timer.
-         */
-        timer =
-            new Timer(
-                30,
-                e -> {
+        // SIMULATION TIMER
+        timer = new Timer(
+            30,
+            e -> {
 
-                    if (paused) {
-                        return;
-                    }
-
-                    try {
-                        timer.setDelay(
-                            fastForward.getDelay()
-                        );
-                        updateSimulation();
-                        repaint();
-                    } catch (RuntimeException exception) {
-                        timer.stop();
-                        JOptionPane.showMessageDialog(
-                            this,
-                            "The simulation stopped because of an unexpected error:\n"
-                                + exception.getMessage(),
-                            "Simulation Error",
-                            JOptionPane.ERROR_MESSAGE
-                        );
-                    }
+                if (paused) {
+                    return;
                 }
-            );
+
+                try {
+
+                    timer.setDelay(
+                        fastForward.getDelay()
+                    );
+
+                    updateSimulation();
+                    repaint();
+
+                } catch (RuntimeException exception) {
+
+                    timer.stop();
+
+                    JOptionPane.showMessageDialog(
+                        this,
+                        "The simulation stopped because of an unexpected error:\n"
+                            + exception.getMessage(),
+                        "Simulation Error",
+                        JOptionPane.ERROR_MESSAGE
+                    );
+                }
+            }
+        );
     }
 
     /**
-     * Uses the original 30/40/30 civilian/soldier/medic balance while scaling
-     * each role to the population selected in the setup screen.
+     * Starting population:
+     * 30% civilians
+     * 40% soldiers
+     * 30% medics
      */
     private void addStartingHumans() {
-        int civilianCount = settings.getStartingHumans() * 3 / 10;
-        int medicCount = settings.getStartingHumans() * 3 / 10;
-        int soldierCount = settings.getStartingHumans()
-            - civilianCount - medicCount;
-        for (int i = 0; i < settings.getStartingHumans(); i++) {
+
+        int civilianCount =
+            settings.getStartingHumans() * 3 / 10;
+
+        int medicCount =
+            settings.getStartingHumans() * 3 / 10;
+
+        int soldierCount =
+            settings.getStartingHumans()
+                - civilianCount
+                - medicCount;
+
+        for (
+            int i = 0;
+            i < settings.getStartingHumans();
+            i++
+        ) {
+
             Vector2D spawn = randomHumanPosition();
+
             int x = (int) spawn.getX();
             int y = (int) spawn.getY();
+
             Human human;
+
             if (i < civilianCount) {
+
                 human = new Civilian(x, y);
-            } else if (i < civilianCount + soldierCount) {
+
+            } else if (
+                i < civilianCount + soldierCount
+            ) {
+
                 human = new Soldier(x, y);
+
             } else {
+
                 human = new Medic(x, y);
             }
+
             world.addCharacter(human);
         }
     }
 
     private static SimulationSettings createDefaultSettings() {
+
         return new SimulationSettings(
             SimulationSettings.DEFAULT_HUMANS,
-            SimulationSettings.DEFAULT_ZOMBIES);
+            SimulationSettings.DEFAULT_ZOMBIES
+        );
     }
 
-    /*
-     * Finds a random position
-     * for a human.
+    /**
+     * Find a valid position for a human.
      */
     private Vector2D randomHumanPosition() {
 
@@ -242,35 +297,25 @@ public class Main extends JPanel {
 
         do {
 
-            x =
-                random.nextInt(
-                    WORLD_WIDTH - 100
-                ) + 40;
+            x = random.nextInt(
+                WORLD_WIDTH - 100
+            ) + 40;
 
-            y =
-                random.nextInt(
-                    WORLD_HEIGHT - 120
-                ) + 40;
+            y = random.nextInt(
+                WORLD_HEIGHT - 120
+            ) + 40;
 
-            /*
-             * Check safe point.
-             */
-            invalid =
-                safePoint.contains(
-                    x,
-                    y,
-                    15
-                );
+            invalid = safePoint.contains(
+                x,
+                y,
+                15
+            );
 
-            /*
-             * Check other buildings.
-             */
             for (Building building : buildings) {
 
                 if (building.overlaps(x, y, 15)) {
 
                     invalid = true;
-
                     break;
                 }
             }
@@ -280,78 +325,50 @@ public class Main extends JPanel {
         return new Vector2D(x, y);
     }
 
-    /*
-     * Creates a new zombie wave
-     * every 15 seconds.
+    /**
+     * Create new zombie waves.
+     * Every fifth wave contains a Mutant Boss.
      */
     private void updateTimedWaves() {
 
-        long now =
-            world.getTime();
+        long now = world.getTime();
 
         if (
-            now - lastWaveTime
-                < WAVE_INTERVAL
+            now - lastWaveTime < WAVE_INTERVAL
         ) {
-
             return;
         }
 
-        /*
-         * Move to next wave.
-         */
         waveNumber++;
 
-        // Surviving zombies, including bosses, remain when a wave is added.
-
-        /*
-         * Check whether this is
-         * a boss wave.
-         */
         boolean bossWave =
             waveNumber % 5 == 0;
 
         ZombieWave wave;
 
-        /*
-         * BOSS WAVE
-         */
         if (bossWave) {
 
-            wave =
-                new ZombieWave(
-                    1,
-                    true
-                );
+            wave = new ZombieWave(
+                1,
+                true
+            );
 
         } else {
 
-            /*
-             * NORMAL WAVE
-             *
-             * Normal waves gradually
-             * increase in size.
-             */
             int zombiesThisWave =
                 BASE_ZOMBIES_PER_WAVE
                     + (waveNumber - 1)
                     * ZOMBIES_ADDED_PER_WAVE;
 
-            wave =
-                new ZombieWave(
-                    zombiesThisWave,
-                    false
-                );
+            wave = new ZombieWave(
+                zombiesThisWave,
+                false
+            );
         }
 
-        /*
-         * Zombie spawn points.
-         */
+        // SPAWN POINTS
         wave.addSpawnPoint(
-            new Vector2D(
-                300,
-                30
-            )
+            new Vector2D(300, 30)
         );
 
         wave.addSpawnPoint(
@@ -376,70 +393,77 @@ public class Main extends JPanel {
         );
 
         world.addWave(wave);
-
         world.spawnWave(wave);
+
         addHumanReinforcements();
 
         lastWaveTime = now;
     }
 
-    /** Each new wave brings two humans of each role, including boss waves. */
+    /**
+     * Add two medics, two civilians,
+     * and two soldiers each wave.
+     */
     private void addHumanReinforcements() {
+
         for (int role = 0; role < 6; role++) {
+
             Vector2D spawn = randomHumanPosition();
+
             int x = (int) spawn.getX();
             int y = (int) spawn.getY();
+
             Human human = switch (role % 3) {
+
                 case 0 -> new Medic(x, y);
                 case 1 -> new Civilian(x, y);
                 default -> new Soldier(x, y);
             };
+
             world.addCharacter(human);
         }
     }
 
-    /*
-     * Updates all simulation behaviour.
+    /**
+     * Update the entire simulation.
      */
     private void updateSimulation() {
 
-        /*
-         * Make sure panel size
-         * is available.
-         */
         if (
             getWidth() <= 0
                 || getHeight() <= 0
         ) {
-
             return;
         }
 
-        /*
-         * Update waves.
-         */
-        // One movement step represents 30 simulation milliseconds. The 1x/2x/5x
-        // controls run these steps every 30/15/6 real milliseconds respectively.
+        // ADVANCE SIMULATION TIME
         world.advanceTime(30);
+
+        // SPAWN TIMED WAVES
         updateTimedWaves();
 
+        // NEW: MUTANT BOSS SPECIAL ABILITIES
+        // Ground Smash and Zombie Summoning
+        world.updateBossAbilities();
+
         long now = world.getTime();
+
+        // RESOURCE RESPAWNING
         for (Resource resource : resources) {
             resource.updateRespawn(now);
         }
 
-        var humans =
-            world.getHumans();
+        var humans = world.getHumans();
+        var zombies = world.getZombies();
 
-        var zombies =
-            world.getZombies();
-
-        /*
-         * UPDATE HUMANS
-         */
+        // UPDATE HUMANS
         for (Human human : humans) {
 
-            human.setEnvironment(buildings, humans);
+            human.setEnvironment(
+                buildings,
+                humans
+            );
+
             human.update(
                 getWidth(),
                 getHeight(),
@@ -447,9 +471,7 @@ public class Main extends JPanel {
                 safePoint
             );
 
-            /*
-             * Building interaction.
-             */
+            // BUILDING INTERACTION
             for (Building building : buildings) {
 
                 if (
@@ -464,23 +486,16 @@ public class Main extends JPanel {
             }
         }
 
-        /*
-         * Store humans that were killed
-         * during this update.
-         */
+        // COLLECT DEAD HUMANS
         ArrayList<Human> convertedHumans =
             new ArrayList<>();
 
-        /*
-         * UPDATE ZOMBIES
-         */
+        // UPDATE ZOMBIES
         for (Zombie zombie : zombies) {
 
             zombie.setBuildings(buildings);
 
-            /*
-             * Bloater explosion.
-             */
+            // BLOATER EXPLOSION
             if (
                 zombie instanceof Bloater bloater
                     && bloater.shouldExplode(humans)
@@ -489,88 +504,59 @@ public class Main extends JPanel {
                 ArrayList<Human> explosionDeaths =
                     bloater.explode(humans);
 
-                for (
-                    Human human
-                        : explosionDeaths
-                ) {
+                for (Human human : explosionDeaths) {
 
                     if (
-                        !convertedHumans
-                            .contains(human)
+                        !convertedHumans.contains(human)
                     ) {
 
-                        convertedHumans
-                            .add(human);
+                        convertedHumans.add(human);
                     }
                 }
 
                 continue;
             }
 
-            /*
-             * Normal zombie behaviour.
-             *
-             * MutantBoss also uses this
-             * because it extends Zombie.
-             */
-            Human deadHuman =
-                zombie.update(
-                    getWidth(),
-                    getHeight(),
-                    humans,
-                    safePoint
-                );
+            // NORMAL ZOMBIE AND BOSS BEHAVIOUR
+            Human deadHuman = zombie.update(
+                getWidth(),
+                getHeight(),
+                humans,
+                safePoint
+            );
 
-            /*
-             * Prevent duplicate conversions.
-             */
             if (
                 deadHuman != null
-                    && !convertedHumans
-                        .contains(deadHuman)
+                    && !convertedHumans.contains(deadHuman)
             ) {
 
-                convertedHumans
-                    .add(deadHuman);
+                convertedHumans.add(deadHuman);
             }
         }
 
-        /*
-         * Convert dead humans
-         * into random zombie types.
-         */
-        for (
-            Human human
-                : convertedHumans
-        ) {
+        // CONVERT DEAD HUMANS TO ZOMBIES
+        for (Human human : convertedHumans) {
 
-            Zombie newZombie = ZombieSpawns.random(random, human.getX(), human.getY());
-
-            world.addCharacter(
-                newZombie
+            Zombie newZombie = ZombieSpawns.random(
+                random,
+                human.getX(),
+                human.getY()
             );
+
+            world.addCharacter(newZombie);
         }
 
-        /*
-         * Remove dead characters.
-         */
+        // REMOVE DEAD CHARACTERS
         world.update();
+
+        // REFRESH POPULATION INFORMATION
         refreshPopulationSummary();
 
-        /*
-         * SIMULATION END CONDITION
-         *
-         * If no humans remain,
-         * update the screen first.
-         */
+        // END CONDITION
         if (world.getHumans().isEmpty()) {
 
             repaint();
 
-            /*
-             * Delay the popup until
-             * Swing has processed the repaint.
-             */
             SwingUtilities.invokeLater(
                 () -> endSimulation()
             );
@@ -579,11 +565,8 @@ public class Main extends JPanel {
         }
     }
 
-    /*
-     * Stops the simulation when all
-     * humans have died.
-     *
-     * The user can restart or exit.
+    /**
+     * End simulation and offer restart.
      */
     private void endSimulation() {
 
@@ -604,33 +587,23 @@ public class Main extends JPanel {
                 JOptionPane.INFORMATION_MESSAGE
             );
 
-        /*
-         * YES
-         *
-         * Restart simulation.
-         */
         if (
-            choice
-                == JOptionPane.YES_OPTION
+            choice == JOptionPane.YES_OPTION
         ) {
 
             java.awt.Window currentWindow =
-                SwingUtilities.getWindowAncestor(
-                    this
-                );
+                SwingUtilities.getWindowAncestor(this);
 
             if (currentWindow != null) {
-
                 currentWindow.dispose();
             }
 
-            /*
-             * Start a completely
-             * new simulation.
-             */
             try {
+
                 createAndStartSimulation();
+
             } catch (RuntimeException exception) {
+
                 JOptionPane.showMessageDialog(
                     null,
                     "The replacement simulation could not start:\n"
@@ -642,90 +615,178 @@ public class Main extends JPanel {
 
         } else {
 
-            /*
-             * NO
-             *
-             * Close application.
-             */
             System.exit(0);
         }
     }
 
-    /*
-     * Starts simulation.
+    /**
+     * Start simulation timer.
      */
     public void startSimulation() {
 
-        lastWaveTime =
-            world.getTime();
+        lastWaveTime = world.getTime();
 
         timer.start();
     }
 
-    /*
-     * Returns fast-forward controls.
-     */
     public FastForward getFastForward() {
-
         return fastForward;
     }
 
-    /** Returns the controls shown below the simulation. */
+    /**
+     * Controls and legend below the game.
+     */
     public JPanel getSimulationControls() {
-        JPanel controls = new JPanel(new BorderLayout());
-        JPanel legend = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 3));
-        legend.add(new JLabel("Legend:"));
-        addLegendItem(legend, "C Civilian", new Color(0, 137, 123));
-        addLegendItem(legend, "S Soldier", new Color(0, 137, 123));
-        addLegendItem(legend, "M Medic", new Color(0, 137, 123));
-        addLegendItem(legend, "Z Standard zombie", new Color(211, 47, 47));
-        addLegendItem(legend, "R Runner", new Color(245, 124, 0));
-        addLegendItem(legend, "S Stalker", new Color(123, 31, 162));
-        addLegendItem(legend, "B Bloater", new Color(84, 110, 122));
-        addLegendItem(legend, "BOSS Mutant boss", new Color(74, 20, 140));
-        addLegendItem(legend, "Safe Zone", new Color(0, 110, 0));
 
-        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JPanel controls =
+            new JPanel(new BorderLayout());
+
+        JPanel legend =
+            new JPanel(
+                new FlowLayout(
+                    FlowLayout.CENTER,
+                    10,
+                    3
+                )
+            );
+
+        legend.add(new JLabel("Legend:"));
+
+        addLegendItem(
+            legend,
+            "C Civilian",
+            new Color(0, 137, 123)
+        );
+
+        addLegendItem(
+            legend,
+            "S Soldier",
+            new Color(0, 137, 123)
+        );
+
+        addLegendItem(
+            legend,
+            "M Medic",
+            new Color(0, 137, 123)
+        );
+
+        addLegendItem(
+            legend,
+            "Z Standard zombie",
+            new Color(211, 47, 47)
+        );
+
+        addLegendItem(
+            legend,
+            "R Runner",
+            new Color(245, 124, 0)
+        );
+
+        addLegendItem(
+            legend,
+            "S Stalker",
+            new Color(123, 31, 162)
+        );
+
+        addLegendItem(
+            legend,
+            "B Bloater",
+            new Color(84, 110, 122)
+        );
+
+        addLegendItem(
+            legend,
+            "BOSS Mutant boss",
+            new Color(74, 20, 140)
+        );
+
+        addLegendItem(
+            legend,
+            "Safe Zone",
+            new Color(0, 110, 0)
+        );
+
+        JPanel buttons =
+            new JPanel(
+                new FlowLayout(
+                    FlowLayout.CENTER
+                )
+            );
+
         buttons.add(fastForward);
         buttons.add(pauseButton);
-        JComboBox<String> treatment = new JComboBox<>(new String[] {
-            "Soldiers first", "Most injured first"
-        });
-        treatment.setToolTipText("Choose who medics help first; critical self-healing still takes priority.");
+
+        JComboBox<String> treatment =
+            new JComboBox<>(
+                new String[] {
+                    "Soldiers first",
+                    "Most injured first"
+                }
+            );
+
+        treatment.setToolTipText(
+            "Choose who medics help first; "
+                + "critical self-healing still takes priority."
+        );
+
         treatment.addActionListener(event -> {
-            world.setTreatmentStrategy(treatment.getSelectedIndex() == 0
-                ? new itera.model.human.treatment.SoldiersFirstStrategy()
-                : new itera.model.human.treatment.MostInjuredStrategy());
+
+            world.setTreatmentStrategy(
+                treatment.getSelectedIndex() == 0
+                    ? new itera.model.human.treatment.SoldiersFirstStrategy()
+                    : new itera.model.human.treatment.MostInjuredStrategy()
+            );
         });
-        buttons.add(new JLabel("Medic priority:"));
+
+        buttons.add(
+            new JLabel("Medic priority:")
+        );
+
         buttons.add(treatment);
+
         refreshPopulationSummary();
-        controls.add(legend, BorderLayout.NORTH);
-        controls.add(populationSummary, BorderLayout.CENTER);
-        controls.add(buttons, BorderLayout.SOUTH);
+
+        controls.add(
+            legend,
+            BorderLayout.NORTH
+        );
+
+        controls.add(
+            populationSummary,
+            BorderLayout.CENTER
+        );
+
+        controls.add(
+            buttons,
+            BorderLayout.SOUTH
+        );
+
         return controls;
     }
 
-    private void addLegendItem(JPanel legend, String text, Color color) {
+    private void addLegendItem(
+            JPanel legend,
+            String text,
+            Color color) {
+
         JLabel item = new JLabel(text);
+
         item.setForeground(color);
+
         legend.add(item);
     }
 
-    /*
-     * Calculates how many seconds
-     * remain until the next wave.
+    /**
+     * Time remaining until next wave.
      */
     private long getNextWaveSeconds() {
 
         if (lastWaveTime == 0) {
-
             return WAVE_INTERVAL / 1000;
         }
 
         long elapsed =
-            world.getTime()
-                - lastWaveTime;
+            world.getTime() - lastWaveTime;
 
         long remaining =
             Math.max(
@@ -733,30 +794,20 @@ public class Main extends JPanel {
                 WAVE_INTERVAL - elapsed
             );
 
-        return (
-            remaining + 999
-        ) / 1000;
+        return (remaining + 999) / 1000;
     }
 
-    /*
-     * Draw simulation.
+    /**
+     * Draw the entire simulation.
      */
     @Override
-    protected void paintComponent(
-        Graphics g
-    ) {
+    protected void paintComponent(Graphics g) {
 
         super.paintComponent(g);
 
-        /*
-         * BACKGROUND
-         */
+        // BACKGROUND
         g.setColor(
-            new Color(
-                220,
-                220,
-                220
-            )
+            new Color(220, 220, 220)
         );
 
         g.fillRect(
@@ -766,47 +817,25 @@ public class Main extends JPanel {
             getHeight()
         );
 
-        /*
-         * BUILDINGS
-         */
-        for (
-            Building building
-                : buildings
-        ) {
-
+        // BUILDINGS
+        for (Building building : buildings) {
             building.draw(g);
         }
 
-        /*
-         * RESOURCES
-         */
-        for (
-            Resource resource
-                : resources
-        ) {
-
+        // RESOURCES
+        for (Resource resource : resources) {
             resource.draw(g);
         }
 
-        /*
-         * SAFE POINT
-         */
+        // SAFE POINT
         safePoint.draw(g);
 
-        /*
-         * CHARACTERS
-         */
-        for (
-            Character character
-                : world.getCharacters()
-        ) {
-
+        // CHARACTERS
+        for (Character character : world.getCharacters()) {
             character.draw(g);
         }
 
-        /*
-         * STATUS INFORMATION
-         */
+        // STATUS INFORMATION
         int humanCount =
             world.getHumans().size();
 
@@ -816,9 +845,7 @@ public class Main extends JPanel {
         long nextWaveSeconds =
             getNextWaveSeconds();
 
-        g.setColor(
-            Color.BLACK
-        );
+        g.setColor(Color.BLACK);
 
         g.setFont(
             new Font(
@@ -829,20 +856,17 @@ public class Main extends JPanel {
         );
 
         String humanText =
-            "Humans: "
-                + humanCount;
+            "Humans: " + humanCount;
 
         String zombieText =
-            "Zombies: "
-                + zombieCount;
+            "Zombies: " + zombieCount;
 
         String killsText =
             "Eliminated: "
                 + world.getTotalZombieEliminations();
 
         String waveText =
-            "Wave: "
-                + waveNumber;
+            "Wave: " + waveNumber;
 
         String nextWaveText =
             "Next wave: "
@@ -855,40 +879,18 @@ public class Main extends JPanel {
         int gap = 22;
 
         int totalWidth =
-            fm.stringWidth(
-                humanText
-            )
-                + fm.stringWidth(
-                    zombieText
-                )
-                + fm.stringWidth(
-                    killsText
-                )
-                + fm.stringWidth(
-                    waveText
-                )
-                + fm.stringWidth(
-                    nextWaveText
-                )
+            fm.stringWidth(humanText)
+                + fm.stringWidth(zombieText)
+                + fm.stringWidth(killsText)
+                + fm.stringWidth(waveText)
+                + fm.stringWidth(nextWaveText)
                 + gap * 4;
 
-        /*
-         * Centre status text.
-         */
-        int startX =
-            (
-                getWidth()
-                    - totalWidth
-            ) / 2;
+        int currentX =
+            (getWidth() - totalWidth) / 2;
 
         int textY = 28;
 
-        int currentX =
-            startX;
-
-        /*
-         * Humans
-         */
         g.drawString(
             humanText,
             currentX,
@@ -896,13 +898,8 @@ public class Main extends JPanel {
         );
 
         currentX +=
-            fm.stringWidth(
-                humanText
-            ) + gap;
+            fm.stringWidth(humanText) + gap;
 
-        /*
-         * Zombies
-         */
         g.drawString(
             zombieText,
             currentX,
@@ -910,13 +907,8 @@ public class Main extends JPanel {
         );
 
         currentX +=
-            fm.stringWidth(
-                zombieText
-            ) + gap;
+            fm.stringWidth(zombieText) + gap;
 
-        /*
-         * Cumulative zombie eliminations
-         */
         g.drawString(
             killsText,
             currentX,
@@ -924,13 +916,8 @@ public class Main extends JPanel {
         );
 
         currentX +=
-            fm.stringWidth(
-                killsText
-            ) + gap;
+            fm.stringWidth(killsText) + gap;
 
-        /*
-         * Wave
-         */
         g.drawString(
             waveText,
             currentX,
@@ -938,45 +925,59 @@ public class Main extends JPanel {
         );
 
         currentX +=
-            fm.stringWidth(
-                waveText
-            ) + gap;
+            fm.stringWidth(waveText) + gap;
 
-        /*
-         * Next wave timer
-         */
         g.drawString(
             nextWaveText,
             currentX,
             textY
         );
 
+        // PAUSE OVERLAY
         if (paused) {
-            g.setColor(new Color(0, 0, 0, 150));
-            g.fillRect(0, 0, getWidth(), getHeight());
+
+            g.setColor(
+                new Color(0, 0, 0, 150)
+            );
+
+            g.fillRect(
+                0,
+                0,
+                getWidth(),
+                getHeight()
+            );
+
             g.setColor(Color.WHITE);
-            g.setFont(new Font("Arial", Font.BOLD, 30));
+
+            g.setFont(
+                new Font(
+                    "Arial",
+                    Font.BOLD,
+                    30
+                )
+            );
+
             String pausedText = "PAUSED";
-            int pausedX = (getWidth() - g.getFontMetrics().stringWidth(pausedText)) / 2;
-            g.drawString(pausedText, pausedX, getHeight() / 2);
+
+            int pausedX =
+                (
+                    getWidth()
+                        - g.getFontMetrics()
+                        .stringWidth(pausedText)
+                ) / 2;
+
+            g.drawString(
+                pausedText,
+                pausedX,
+                getHeight() / 2
+            );
         }
 
-        /*
-         * BOSS WAVE WARNING
-         *
-         * Display a large warning
-         * during waves:
-         *
-         * 5, 10, 15, 20...
-         */
+        // BOSS WAVE WARNING
         if (waveNumber % 5 == 0) {
 
             g.setColor(
-                new Color(
-                    120,
-                    0,
-                    120
-                )
+                new Color(120, 0, 120)
             );
 
             g.setFont(
@@ -996,9 +997,7 @@ public class Main extends JPanel {
             int bossX =
                 (
                     getWidth()
-                        - bossFm.stringWidth(
-                            bossText
-                        )
+                        - bossFm.stringWidth(bossText)
                 ) / 2;
 
             g.drawString(
@@ -1009,15 +1008,14 @@ public class Main extends JPanel {
         }
     }
 
-    /*
-     * Creates a completely fresh
-     * simulation window.
-     *
-     * Used at program start and restart.
+    /**
+     * Create a new simulation window.
      */
     private static void createAndStartSimulation() {
 
-        SimulationSettings settings = SimulationSettingsDialog.showDialog(null);
+        SimulationSettings settings =
+            SimulationSettingsDialog.showDialog(null);
+
         if (settings == null) {
             return;
         }
@@ -1034,15 +1032,29 @@ public class Main extends JPanel {
             new BorderLayout()
         );
 
+        // SCROLLABLE GAME AREA
+        // This keeps the Police Station fully accessible.
+        JScrollPane scrollPane =
+            new JScrollPane(simulation);
+
+        scrollPane.setPreferredSize(
+            new Dimension(1100, 600)
+        );
+
+        scrollPane.setHorizontalScrollBarPolicy(
+            JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED
+        );
+
+        scrollPane.setVerticalScrollBarPolicy(
+            JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED
+        );
+
         frame.add(
-            simulation,
+            scrollPane,
             BorderLayout.CENTER
         );
 
-        /*
-         * Fast-forward controls
-         * at bottom.
-         */
+        // CONTROLS BELOW GAME
         frame.add(
             simulation.getSimulationControls(),
             BorderLayout.SOUTH
@@ -1054,23 +1066,17 @@ public class Main extends JPanel {
 
         frame.pack();
 
-        frame.setLocationRelativeTo(
-            null
-        );
+        frame.setLocationRelativeTo(null);
 
-        frame.setVisible(
-            true
-        );
+        frame.setVisible(true);
 
         simulation.startSimulation();
     }
 
-    /*
-     * Main method.
+    /**
+     * Program entry point.
      */
-    public static void main(
-        String[] args
-    ) {
+    public static void main(String[] args) {
 
         SwingUtilities.invokeLater(
             () -> {
@@ -1079,14 +1085,11 @@ public class Main extends JPanel {
 
                     createAndStartSimulation();
 
-                } catch (
-                    RuntimeException exception
-                ) {
+                } catch (RuntimeException exception) {
 
                     JOptionPane.showMessageDialog(
                         null,
-                        "The simulation could "
-                            + "not start:\n"
+                        "The simulation could not start:\n"
                             + exception.getMessage(),
                         "Simulation Error",
                         JOptionPane.ERROR_MESSAGE
