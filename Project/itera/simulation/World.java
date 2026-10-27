@@ -1,3 +1,4 @@
+
 package itera.simulation;
 
 import itera.model.*;
@@ -28,6 +29,15 @@ public class World {
     public void advanceTime(long milliseconds) {
         if (milliseconds < 0) throw new IllegalArgumentException("Time cannot go backwards");
         simulationTime += milliseconds;
+    }
+
+
+    // Track zombie eliminations across the entire simulation.
+    private long totalZombieEliminations;
+
+    /** Returns the cumulative number of eliminated zombies. */
+    public long getTotalZombieEliminations() {
+        return totalZombieEliminations;
     }
 
 
@@ -71,6 +81,12 @@ public class World {
 
     public void update() {
 
+        // Count defeated zombies before removing dead characters.
+        totalZombieEliminations += characters.stream()
+            .filter(character -> character instanceof Zombie && !character.isAlive())
+            .count();
+
+        // Removed zombies cannot be counted again on later updates.
         characters.removeIf(character -> !character.isAlive());
     }
 

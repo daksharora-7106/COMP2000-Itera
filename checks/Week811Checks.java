@@ -1,3 +1,4 @@
+
 package itera.checks;
 
 import itera.model.*;
@@ -85,6 +86,42 @@ public final class Week811Checks {
         check(world.getHumans().size() == 5, "Result list mutations cannot clear world");
         rejects(NullPointerException.class, () -> world.findCharacters(Human.class, null));
         rejects(NullPointerException.class, () -> world.findCharacters(null, h -> true));
+
+        // Verify cumulative zombie elimination tracking.
+        World killWorld = new World();
+        Zombie fallen = new Zombie(0, 0);
+        Zombie surviving = new Zombie(1, 1);
+
+        killWorld.addCharacter(fallen);
+        killWorld.addCharacter(surviving);
+
+        check(killWorld.getTotalZombieEliminations() == 0,
+            "No eliminations initially");
+
+        fallen.takeDamage(10000);
+        killWorld.update();
+
+        check(killWorld.getTotalZombieEliminations() == 1,
+            "Counts dead zombie on removal");
+
+        killWorld.update();
+
+        check(killWorld.getTotalZombieEliminations() == 1,
+            "Does not count removed zombie twice");
+
+        surviving.takeDamage(10000);
+        killWorld.update();
+
+        check(killWorld.getTotalZombieEliminations() == 2,
+            "Accumulates later eliminations");
+
+        Civilian deadCivilian = new Civilian(0, 0);
+        killWorld.addCharacter(deadCivilian);
+        deadCivilian.takeDamage(10000);
+        killWorld.update();
+
+        check(killWorld.getTotalZombieEliminations() == 2,
+            "Human deaths do not increment zombie count");
 
         PopulationSnapshot snapshot = world.populationSnapshot();
         check(snapshot.getRoles().get("Soldier").count() == 1, "Dead soldier excluded");
