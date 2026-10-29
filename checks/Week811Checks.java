@@ -16,10 +16,12 @@ import javax.swing.*;
 /** Standalone deterministic checks; no external test library or display needed. */
 public final class Week811Checks {
     private static int checks;
+
     private static void check(boolean condition, String message) {
         checks++;
         if (!condition) throw new AssertionError(message);
     }
+
     private static void rejects(Class<? extends Throwable> expected, Runnable action) {
         try { action.run(); }
         catch (Throwable error) {
@@ -28,10 +30,12 @@ public final class Week811Checks {
         }
         throw new AssertionError("Expected " + expected);
     }
+
     private static <T extends Human> T injured(T human, int damage) {
         human.takeDamage(damage);
         return human;
     }
+
     private static <T extends Component> T component(Container parent, Class<T> type) {
         for (Component child : parent.getComponents()) {
             if (type.isInstance(child)) return type.cast(child);
@@ -123,6 +127,64 @@ public final class Week811Checks {
         check(killWorld.getTotalZombieEliminations() == 2,
             "Human deaths do not increment zombie count");
 
+        // NEW: Safe Zone threat detection tests.
+        World threatWorld = new World();
+        SafePoint threatSafePoint = new SafePoint(0, 0, 180, 180, 10);
+
+        check(
+            threatWorld.countZombiesNearSafePoint(threatSafePoint, 150) == 0,
+            "Safe Zone is clear without zombies"
+        );
+
+        Zombie nearbyOne = new Zombie(200, 100);
+        Zombie nearbyTwo = new Zombie(250, 100);
+        Zombie nearbyThree = new Zombie(300, 100);
+        Zombie distantZombie = new Zombie(700, 700);
+
+        threatWorld.addCharacter(nearbyOne);
+        threatWorld.addCharacter(distantZombie);
+
+        check(
+            threatWorld.countZombiesNearSafePoint(threatSafePoint, 150) == 1,
+            "One nearby zombie triggers warning count"
+        );
+
+        threatWorld.addCharacter(nearbyTwo);
+
+        check(
+            threatWorld.countZombiesNearSafePoint(threatSafePoint, 150) == 2,
+            "Two nearby zombies are counted"
+        );
+
+        threatWorld.addCharacter(nearbyThree);
+
+        check(
+            threatWorld.countZombiesNearSafePoint(threatSafePoint, 150) == 3,
+            "Three nearby zombies trigger high threat count"
+        );
+
+        nearbyThree.takeDamage(10000);
+
+        check(
+            threatWorld.countZombiesNearSafePoint(threatSafePoint, 150) == 2,
+            "Dead zombies are excluded before cleanup"
+        );
+
+        check(
+            threatWorld.countZombiesNearSafePoint(threatSafePoint, 0) == 0,
+            "Radius zero only detects overlap with Safe Zone"
+        );
+
+        rejects(
+            IllegalArgumentException.class,
+            () -> threatWorld.countZombiesNearSafePoint(threatSafePoint, -1)
+        );
+
+        rejects(
+            NullPointerException.class,
+            () -> threatWorld.countZombiesNearSafePoint(null, 150)
+        );
+
         PopulationSnapshot snapshot = world.populationSnapshot();
         check(snapshot.getRoles().get("Soldier").count() == 1, "Dead soldier excluded");
         check(snapshot.getRoles().get("Medic").wounded() == 1, "Wounded count");
@@ -162,9 +224,11 @@ public final class Week811Checks {
         ZombieWave missing = new ZombieWave(1, false, (x, y) -> null);
         missing.addSpawnPoint(new Vector2D(1, 1));
         rejects(NullPointerException.class, () -> missing.trigger(waves));
+
         Class<?>[] types = {Zombie.class, Runner.class, Stalker.class, Bloater.class};
         for (int i = 0; i < types.length; i++)
             check(ZombieSpawns.atType(i, 9, 8).getClass() == types[i], "Initial type rotation " + i);
+
         Random random = new Random(42);
         for (int i = 0; i < 30; i++) {
             Zombie zombie = ZombieSpawns.random(random, 9, 8);
@@ -192,32 +256,45 @@ public final class Week811Checks {
                 JPanel controls = simulation.getSimulationControls();
                 JComboBox<?> choice = component(controls, JComboBox.class);
                 check(choice != null && choice.getItemCount() == 2, "Both choices visible");
+
                 var field = Main.class.getDeclaredField("world");
                 field.setAccessible(true);
                 World uiWorld = (World) field.get(simulation);
+
                 check(uiWorld.getHumans().size() == 20 && uiWorld.getZombies().size() == 10, "Default population unchanged");
+
                 choice.setSelectedIndex(1);
                 check(uiWorld.findCharacters(Medic.class, m -> m.getTreatmentStrategy() instanceof MostInjuredStrategy).size() == 6, "UI applies selected strategy");
+
                 var spawn = Main.class.getDeclaredMethod("addHumanReinforcements");
                 spawn.setAccessible(true);
                 spawn.invoke(simulation);
+
                 check(uiWorld.findCharacters(Medic.class, m -> m.getTreatmentStrategy() instanceof MostInjuredStrategy).size() == 8, "Actual reinforcement path inherits selection");
                 check(uiWorld.getHumans().size() == 26, "Six human reinforcements retained");
+
                 choice.setSelectedIndex(0);
                 check(uiWorld.findCharacters(Medic.class, m -> m.getTreatmentStrategy() instanceof SoldiersFirstStrategy).size() == 8, "Switch back applies to all medics");
+
                 simulation.setSize(1200, 800);
                 var update = Main.class.getDeclaredMethod("updateSimulation");
                 update.setAccessible(true);
                 for (int i = 0; i < 20; i++) update.invoke(simulation);
+
                 var label = Main.class.getDeclaredField("populationSummary");
                 label.setAccessible(true);
                 check(((JLabel) label.get(simulation)).getText().contains("wounded"), "Live summary refreshed");
+
                 var graphics = new BufferedImage(1200, 800, BufferedImage.TYPE_INT_RGB).createGraphics();
                 simulation.paint(graphics);
                 graphics.dispose();
                 check(true, "Simulation renders headlessly after updates");
-            } catch (ReflectiveOperationException error) { throw new AssertionError(error); }
+
+            } catch (ReflectiveOperationException error) {
+                throw new AssertionError(error);
+            }
         });
+
         System.out.println("Passed " + checks + " checks.");
     }
 }
