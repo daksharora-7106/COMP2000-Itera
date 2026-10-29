@@ -127,7 +127,7 @@ public final class Week811Checks {
         check(killWorld.getTotalZombieEliminations() == 2,
             "Human deaths do not increment zombie count");
 
-        // NEW: Safe Zone threat detection tests.
+        // Safe Zone threat detection tests.
         World threatWorld = new World();
         SafePoint threatSafePoint = new SafePoint(0, 0, 180, 180, 10);
 
@@ -262,6 +262,28 @@ public final class Week811Checks {
                 World uiWorld = (World) field.get(simulation);
 
                 check(uiWorld.getHumans().size() == 20 && uiWorld.getZombies().size() == 10, "Default population unchanged");
+
+                // Survival timer tests.
+                Main timedSimulation = new Main(new SimulationSettings(20, 10));
+                World timedWorld = (World) field.get(timedSimulation);
+
+                var survivalTime = Main.class.getDeclaredMethod("getSurvivalTime");
+                survivalTime.setAccessible(true);
+
+                check("00:00".equals(survivalTime.invoke(timedSimulation)),
+                    "Survival timer starts at zero");
+
+                timedWorld.advanceTime(65_000);
+                check("01:05".equals(survivalTime.invoke(timedSimulation)),
+                    "Survival timer formats elapsed simulation time");
+
+                timedWorld.advanceTime(3_535_000);
+                check("60:00".equals(survivalTime.invoke(timedSimulation)),
+                    "Survival timer supports one hour");
+
+                Main freshSimulation = new Main(new SimulationSettings(20, 10));
+                check("00:00".equals(survivalTime.invoke(freshSimulation)),
+                    "New simulation resets survival timer");
 
                 choice.setSelectedIndex(1);
                 check(uiWorld.findCharacters(Medic.class, m -> m.getTreatmentStrategy() instanceof MostInjuredStrategy).size() == 6, "UI applies selected strategy");

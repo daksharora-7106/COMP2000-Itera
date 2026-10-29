@@ -27,6 +27,7 @@ public class Main extends JPanel {
     private final Random random = new Random();
 
     private final World world;
+    private final long survivalStartTime;
     private final SafePoint safePoint;
     private final FastForward fastForward;
     private final JButton pauseButton;
@@ -74,7 +75,7 @@ public class Main extends JPanel {
                 : summary
         );
 
-        // NEW FEATURE: Live Safe Zone Threat Alert.
+        // Live Safe Zone Threat Alert.
         long nearby = world.countZombiesNearSafePoint(safePoint, 150);
 
         if (nearby == 0) {
@@ -108,6 +109,7 @@ public class Main extends JPanel {
         );
 
         world = new World();
+        survivalStartTime = world.getTime();
 
         // SAFE POINT
         safePoint = new SafePoint(
@@ -465,7 +467,7 @@ public class Main extends JPanel {
         // SPAWN TIMED WAVES
         updateTimedWaves();
 
-        // NEW: MUTANT BOSS SPECIAL ABILITIES
+        // MUTANT BOSS SPECIAL ABILITIES
         // Ground Smash and Zombie Summoning
         world.updateBossAbilities();
 
@@ -602,6 +604,10 @@ public class Main extends JPanel {
                     + "No Humans Remaining.\n"
                     + "Wave reached: "
                     + waveNumber
+                    + "\nTime survived: "
+                    + getSurvivalTime()
+                    + "\nZombies eliminated: "
+                    + world.getTotalZombieEliminations()
                     + "\n\n"
                     + "Would you like to restart "
                     + "the simulation?",
@@ -774,7 +780,7 @@ public class Main extends JPanel {
             BorderLayout.NORTH
         );
 
-        // NEW FEATURE: Display population and threat status.
+        // Display population and threat status.
         JPanel liveStatus = new JPanel(new GridLayout(2, 1));
 
         liveStatus.add(populationSummary);
@@ -805,9 +811,20 @@ public class Main extends JPanel {
         legend.add(item);
     }
 
-    /**
-     * Time remaining until next wave.
-     */
+    /** Elapsed simulation time, including fast-forward but excluding pauses. */
+    private String getSurvivalTime() {
+        long elapsedSeconds = Math.max(
+            0L,
+            (world.getTime() - survivalStartTime) / 1000
+        );
+
+        long minutes = elapsedSeconds / 60;
+        long seconds = elapsedSeconds % 60;
+
+        return String.format(Locale.ROOT, "%02d:%02d", minutes, seconds);
+    }
+
+    /** Time remaining until the next wave. */
     private long getNextWaveSeconds() {
 
         if (lastWaveTime == 0) {
@@ -894,6 +911,9 @@ public class Main extends JPanel {
             "Eliminated: "
                 + world.getTotalZombieEliminations();
 
+        String survivalText =
+            "Survived: " + getSurvivalTime();
+
         String waveText =
             "Wave: " + waveNumber;
 
@@ -911,9 +931,10 @@ public class Main extends JPanel {
             fm.stringWidth(humanText)
                 + fm.stringWidth(zombieText)
                 + fm.stringWidth(killsText)
+                + fm.stringWidth(survivalText)
                 + fm.stringWidth(waveText)
                 + fm.stringWidth(nextWaveText)
-                + gap * 4;
+                + gap * 5;
 
         int currentX =
             (getWidth() - totalWidth) / 2;
@@ -946,6 +967,15 @@ public class Main extends JPanel {
 
         currentX +=
             fm.stringWidth(killsText) + gap;
+
+        g.drawString(
+            survivalText,
+            currentX,
+            textY
+        );
+
+        currentX +=
+            fm.stringWidth(survivalText) + gap;
 
         g.drawString(
             waveText,
