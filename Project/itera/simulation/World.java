@@ -213,6 +213,40 @@ public class World {
         );
     }
 
+    /**
+     * NEW FEATURE: Safe Zone Threat Detection.
+     *
+     * Counts living zombies inside or near the Safe Zone.
+     * The radius creates a rectangular detection buffer
+     * around the Safe Zone boundaries.
+     *
+     * Dead zombies are excluded from the count.
+     */
+    public long countZombiesNearSafePoint(
+            SafePoint safePoint,
+            int radius) {
+
+        Objects.requireNonNull(
+            safePoint,
+            "Safe point is required"
+        );
+
+        if (radius < 0) {
+            throw new IllegalArgumentException(
+                "Threat detection radius cannot be negative"
+            );
+        }
+
+        return getZombies().stream()
+            .filter(Zombie::isAlive)
+            .filter(zombie -> safePoint.wouldZombieEnter(
+                zombie.getX() - radius,
+                zombie.getY() - radius,
+                zombie.getSize() + radius * 2
+            ))
+            .count();
+    }
+
     public ArrayList<Zombie> getZombies() {
         return findCharacters(
             Zombie.class,

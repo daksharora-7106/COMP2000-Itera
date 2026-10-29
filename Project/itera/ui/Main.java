@@ -47,6 +47,9 @@ public class Main extends JPanel {
     private final JLabel populationSummary =
         new JLabel(" ", SwingConstants.CENTER);
 
+    private final JLabel safeZoneThreat =
+        new JLabel("Safe Zone: SAFE (0 nearby)", SwingConstants.CENTER);
+
     private void refreshPopulationSummary() {
 
         String summary = world.populationSnapshot()
@@ -70,6 +73,26 @@ public class Main extends JPanel {
                 ? "No humans remaining"
                 : summary
         );
+
+        // NEW FEATURE: Live Safe Zone Threat Alert.
+        long nearby = world.countZombiesNearSafePoint(safePoint, 150);
+
+        if (nearby == 0) {
+            safeZoneThreat.setText("Safe Zone: SAFE (0 nearby)");
+            safeZoneThreat.setForeground(new Color(0, 110, 0));
+
+        } else if (nearby < 3) {
+            safeZoneThreat.setText(
+                "Safe Zone: WARNING (" + nearby + " nearby)"
+            );
+            safeZoneThreat.setForeground(new Color(196, 108, 0));
+
+        } else {
+            safeZoneThreat.setText(
+                "Safe Zone: HIGH THREAT (" + nearby + " nearby)"
+            );
+            safeZoneThreat.setForeground(new Color(183, 28, 28));
+        }
     }
 
     public Main() {
@@ -751,8 +774,14 @@ public class Main extends JPanel {
             BorderLayout.NORTH
         );
 
+        // NEW FEATURE: Display population and threat status.
+        JPanel liveStatus = new JPanel(new GridLayout(2, 1));
+
+        liveStatus.add(populationSummary);
+        liveStatus.add(safeZoneThreat);
+
         controls.add(
-            populationSummary,
+            liveStatus,
             BorderLayout.CENTER
         );
 
