@@ -824,6 +824,18 @@ public class Main extends JPanel {
         return String.format(Locale.ROOT, "%02d:%02d", minutes, seconds);
     }
 
+    /**
+     * Warns when the next wave is a boss wave and is at most
+     * five simulation seconds away.
+     */
+    private static boolean isBossWaveIncoming(
+            int currentWave, long secondsUntilNextWave) {
+        return currentWave >= 1
+            && (currentWave + 1) % 5 == 0
+            && secondsUntilNextWave > 0
+            && secondsUntilNextWave <= 5;
+    }
+
     /** Time remaining until the next wave. */
     private long getNextWaveSeconds() {
 
@@ -1030,6 +1042,21 @@ public class Main extends JPanel {
                 pausedX,
                 getHeight() / 2
             );
+        }
+
+        // Early warning before the next boss wave.
+        if (isBossWaveIncoming(waveNumber, nextWaveSeconds)) {
+            g.setColor(new Color(183, 28, 28));
+            g.setFont(new Font("Arial", Font.BOLD, 24));
+
+            String warningText =
+                "BOSS INCOMING - WAVE " + (waveNumber + 1)
+                    + " IN " + nextWaveSeconds + "s";
+
+            FontMetrics warningMetrics = g.getFontMetrics();
+            int warningX = (getWidth()
+                - warningMetrics.stringWidth(warningText)) / 2;
+            g.drawString(warningText, warningX, 65);
         }
 
         // BOSS WAVE WARNING
