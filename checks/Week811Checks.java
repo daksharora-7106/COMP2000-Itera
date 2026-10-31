@@ -263,6 +263,33 @@ public final class Week811Checks {
 
                 check(uiWorld.getHumans().size() == 20 && uiWorld.getZombies().size() == 10, "Default population unchanged");
 
+                // Boss Wave Early Warning regression tests.
+                var bossWarning = Main.class.getDeclaredMethod(
+                    "isBossWaveIncoming", int.class, long.class
+                );
+                bossWarning.setAccessible(true);
+
+                check((boolean) bossWarning.invoke(null, 4, 5L),
+                    "Boss warning starts five seconds before Wave 5");
+
+                check((boolean) bossWarning.invoke(null, 4, 1L),
+                    "Boss warning remains active one second before Wave 5");
+
+                check(!(boolean) bossWarning.invoke(null, 4, 6L),
+                    "Boss warning does not appear too early");
+
+                check(!(boolean) bossWarning.invoke(null, 4, 0L),
+                    "Boss warning stops when countdown reaches zero");
+
+                check(!(boolean) bossWarning.invoke(null, 3, 5L),
+                    "Normal waves do not trigger boss warning");
+
+                check((boolean) bossWarning.invoke(null, 9, 5L),
+                    "Warning also works before Wave 10");
+
+                check(!(boolean) bossWarning.invoke(null, 0, 5L),
+                    "Invalid starting wave does not trigger warning");
+
                 // Survival timer tests.
                 Main timedSimulation = new Main(new SimulationSettings(20, 10));
                 World timedWorld = (World) field.get(timedSimulation);
